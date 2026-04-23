@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Screen } from '@/ui/layout/Screen';
 import { TopBar, btnIcon } from '@/ui/TopBar';
-import { Btn } from '@/ui/Btn';
 import { Badge } from '@/ui/Badge';
 import { MiniMap } from '@/features/inventory/MiniMap';
 import { ImageWithLightbox } from '@/ui/ImageLightbox';
@@ -11,13 +10,11 @@ import { Icon } from '@/design/icons/Icon';
 import { useTheme } from '@/design/theme';
 import { RADIUS, TYPE } from '@/design/tokens';
 import { db } from '@/data/db';
-import { useApp } from '@/app/store';
 
 export default function ItemDetailScreen() {
   const t = useTheme();
   const nav = useNavigate();
   const { sku = '' } = useParams();
-  const setScanDir = useApp((s) => s.setScanDir);
 
   // Edit-mode pulls full doc (incl. imageUrl). Detail relies on Dexie which
   // got its rows from the list endpoint that strips imageUrl, so fetch the
@@ -138,10 +135,6 @@ export default function ItemDetailScreen() {
             </div>
           );
         })}
-      </div>
-      <div style={{ padding: 16, display: 'flex', gap: 10, background: t.bg, borderTop: `1px solid ${t.divider}` }}>
-        <Btn kind="ghost" size="lg" icon="arrowUp" style={{ flex: 1 }} onClick={() => { setScanDir('out'); nav('/scan'); }}>Outgoing</Btn>
-        <Btn kind="primary" size="lg" icon="arrowDown" style={{ flex: 1 }} onClick={() => { setScanDir('in'); nav('/scan'); }}>Incoming</Btn>
       </div>
     </Screen>
   );
