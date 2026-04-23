@@ -30,7 +30,7 @@ function Row({ icon, label, value, color, onClick }: { icon: IconName; label: st
       </div>
       <div style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>{label}</div>
       {value && <div style={{ fontSize: 12, color: t.textDim }}>{value}</div>}
-      <Icon name="chevron" size={14} color={t.textMute}/>
+      {onClick && <Icon name="chevron" size={14} color={t.textMute}/>}
     </div>
   );
 }
@@ -71,8 +71,6 @@ export default function ProfileScreen() {
 
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: t.textMute, padding: '12px 0 8px' }}>APP</div>
         <Row icon="cloud" label="Sync" value={`${pending} pending`} color={pending ? t.warning : t.success} onClick={() => nav('/sync')}/>
-        <Row icon="eye" label="Outdoor mode" value="Auto"/>
-        <Row icon="settings" label="Scan preferences"/>
         <Row icon="x" label="Sign out" color={t.danger} onClick={() => { signOut(); nav('/', { replace: true }); }}/>
       </div>
       <BottomNav/>

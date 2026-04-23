@@ -10,7 +10,7 @@ import { useTheme } from '@/design/theme';
 import { RADIUS, TYPE } from '@/design/tokens';
 import { db } from '@/data/db';
 
-type Filter = 'all' | 'low' | 'A' | 'B';
+type Filter = 'all' | 'low' | string;
 
 export default function InventoryScreen() {
   const t = useTheme();
@@ -18,11 +18,11 @@ export default function InventoryScreen() {
   const [filter, setFilter] = useState<Filter>('all');
 
   const items = useLiveQuery(() => db.items.orderBy('name').toArray(), [], []) ?? [];
+  const zones = Array.from(new Set(items.map((i) => i.zone).filter(Boolean) as string[])).sort();
   const filtered = items.filter((i) => {
+    if (filter === 'all') return true;
     if (filter === 'low') return i.stock <= i.reorderAt;
-    if (filter === 'A') return i.zone === 'A';
-    if (filter === 'B') return i.zone === 'B';
-    return true;
+    return i.zone === filter;
   });
   const lowCount = items.filter((i) => i.stock <= i.reorderAt).length;
 
@@ -33,23 +33,22 @@ export default function InventoryScreen() {
         subtitle={`${items.length} items · ${new Set(items.map((i) => i.loc)).size} locations`}
         leading={null}
         trailing={
-          <div style={{ display: 'flex' }}>
-            <button style={btnIcon()} onClick={() => nav('/inv/new')} aria-label="Add item">
-              <Icon name="plus" color={t.text} size={22}/>
-            </button>
-            <button style={btnIcon()}><Icon name="search" color={t.text} size={20}/></button>
-            <button style={btnIcon()}><Icon name="filter" color={t.text} size={20}/></button>
-          </div>
+          <button style={btnIcon()} onClick={() => nav('/inv/new')} aria-label="Add item">
+            <Icon name="plus" color={t.text} size={22}/>
+          </button>
         }
       />
 
       <div style={{ padding: '4px 20px 12px', display: 'flex', gap: 8, overflow: 'auto' }}>
         <Chip active={filter === 'all'} onClick={() => setFilter('all')}>All</Chip>
-        <Chip active={filter === 'low'} onClick={() => setFilter('low')} color={t.warning} icon="warn">
-          Low stock · {lowCount}
-        </Chip>
-        <Chip active={filter === 'A'} onClick={() => setFilter('A')}>Zone A</Chip>
-        <Chip active={filter === 'B'} onClick={() => setFilter('B')}>Zone B</Chip>
+        {lowCount > 0 && (
+          <Chip active={filter === 'low'} onClick={() => setFilter('low')} color={t.warning} icon="warn">
+            Low stock · {lowCount}
+          </Chip>
+        )}
+        {zones.map((z) => (
+          <Chip key={z} active={filter === z} onClick={() => setFilter(z)}>Zone {z}</Chip>
+        ))}
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', padding: '0 20px' }}>

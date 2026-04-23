@@ -4,7 +4,6 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Screen } from '@/ui/layout/Screen';
 import { TopBar } from '@/ui/TopBar';
 import { Field } from '@/ui/Field';
-import { Chip } from '@/ui/Chip';
 import { Icon } from '@/design/icons/Icon';
 import { useTheme } from '@/design/theme';
 import { RADIUS, TYPE } from '@/design/tokens';
@@ -38,12 +37,7 @@ export default function ManualScreen() {
           autoFocus
           onChange={setQ}
           focused
-          suffix={
-            <div style={{ display: 'flex', gap: 4 }}>
-              <Icon name="qr" size={18} color={t.accent[400]}/>
-              <Icon name="mic" size={18} color={t.textDim}/>
-            </div>
-          }
+          suffix={<Icon name="search" size={18} color={t.textDim}/>}
         />
 
         {hits.length > 0 && (
@@ -71,12 +65,6 @@ export default function ManualScreen() {
             ))}
           </div>
         )}
-
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Chip active icon="history">Recent</Chip>
-          <Chip>Zone B</Chip>
-          <Chip>Low stock</Chip>
-        </div>
 
         <div style={{ flex: 1 }}/>
       </div>

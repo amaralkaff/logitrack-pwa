@@ -83,6 +83,35 @@ export default function HomeScreen() {
         </div>
       </div>
 
+      {/* AI Scan — primary CTA */}
+      <div style={{ padding: '0 20px 12px' }}>
+        <button
+          onClick={() => nav('/scan/ocr')}
+          style={{
+            width: '100%', padding: 16, borderRadius: RADIUS.lg,
+            background: t.accent[500] + '14', border: `1px solid ${t.accent[500]}66`,
+            color: t.text, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14,
+            fontFamily: 'inherit', textAlign: 'left',
+          }}
+        >
+          <div style={{
+            width: 48, height: 48, borderRadius: RADIUS.md,
+            background: t.accent[500],
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: `0 4px 16px ${t.accent.glow}`,
+          }}>
+            <Icon name="camera" size={22} color="#fff"/>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: -0.2 }}>Scan with AI</div>
+            <div style={{ fontSize: 11, color: t.textDim, marginTop: 2 }}>
+              Point camera at a label · Gemini auto-fills the fields
+            </div>
+          </div>
+          <Icon name="chevron" size={18} color={t.textMute}/>
+        </button>
+      </div>
+
       <div style={{ padding: '0 20px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
         <QuickTile
           icon="plus" color={t.accent[500]} label="Add" sub="New item"

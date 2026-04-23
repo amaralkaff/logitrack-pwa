@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Screen } from '@/ui/layout/Screen';
 import { BottomNav } from '@/ui/BottomNav';
-import { TopBar, btnIcon } from '@/ui/TopBar';
+import { TopBar } from '@/ui/TopBar';
 import { Icon } from '@/design/icons/Icon';
 import { useTheme } from '@/design/theme';
 import { RADIUS, TYPE } from '@/design/tokens';
@@ -49,12 +49,7 @@ export default function HistoryScreen() {
 
   return (
     <Screen>
-      <TopBar
-        title="History"
-        subtitle="All transactions"
-        leading={null}
-        trailing={<button style={btnIcon()}><Icon name="filter" color={t.text} size={20}/></button>}
-      />
+      <TopBar title="History" subtitle="All transactions" leading={null}/>
       <div style={{ flex: 1, overflow: 'auto', padding: '0 20px' }}>
         {groups.length === 0 && <div style={{ padding: 20, color: t.textMute, fontSize: 13 }}>No transactions yet.</div>}
         {groups.map((g) => (
