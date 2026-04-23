@@ -35,16 +35,21 @@ export default function ItemFormScreen({ mode }: Props) {
   const nav = useNavigate();
   const { sku: routeSku } = useParams();
   const [search] = useSearchParams();
+  const cleanParam = (key: string, fallback = ''): string => {
+    const v = (search.get(key) ?? '').trim();
+    if (!v || /^(null|undefined|none|n\/a)$/i.test(v)) return fallback;
+    return v;
+  };
   const initial = mode === 'create' ? {
     ...EMPTY,
-    sku: search.get('sku') ?? '',
-    name: search.get('name') ?? '',
-    loc: search.get('loc') ?? '',
-    zone: search.get('zone') ?? '',
-    ean: search.get('ean') ?? '',
-    stock: search.get('stock') ?? '0',
-    reorderAt: search.get('reorderAt') ?? '0',
-    unit: search.get('unit') ?? 'EA',
+    sku: cleanParam('sku'),
+    name: cleanParam('name'),
+    loc: cleanParam('loc'),
+    zone: cleanParam('zone'),
+    ean: cleanParam('ean'),
+    stock: cleanParam('stock', '0'),
+    reorderAt: cleanParam('reorderAt', '0'),
+    unit: cleanParam('unit', 'EA'),
   } : EMPTY;
   const [form, setForm] = useState<FormState>(initial);
   const [busy, setBusy] = useState(false);
@@ -98,31 +103,56 @@ export default function ItemFormScreen({ mode }: Props) {
   const set = (k: keyof FormState) => (v: string) => setForm((s) => ({ ...s, [k]: v }));
 
   const onScanResult = (r: VisionResult) => {
+    // Reject Gemini's literal "null" / empty / whitespace strings so they never
+    // leak into the form as the word 'null'.
+    const clean = (v: unknown): string | null => {
+      if (typeof v !== 'string') return null;
+      const s = v.trim();
+      if (!s) return null;
+      if (/^(null|none|undefined|n\/a|-)$/i.test(s)) return null;
+      return s;
+    };
+    const cleanNum = (v: unknown): number | null => {
+      if (typeof v === 'number' && Number.isFinite(v) && v > 0) return Math.round(v);
+      if (typeof v === 'string') {
+        const n = Number(v);
+        if (Number.isFinite(n) && n > 0) return Math.round(n);
+      }
+      return null;
+    };
+
+    const sku  = clean(r.sku);
+    const name = clean(r.name);
+    const ean  = clean(r.ean);
+    const unit = clean(r.unit);
+    const loc  = clean(r.location);
+    const qty  = cleanNum(r.qty);
+
     const filled: string[] = [];
     const generated: string[] = [];
     setForm((s) => {
       const next = { ...s };
 
       if (!isEdit) {
-        if (r.sku) { next.sku = r.sku; filled.push('SKU'); }
+        if (sku) { next.sku = sku; filled.push('SKU'); }
         else if (!next.sku) {
           next.sku = `ITM-${nanoid(6).toUpperCase()}`;
           generated.push('SKU');
         }
       }
 
-      if (r.name) { next.name = r.name; filled.push('name'); }
+      if (name) { next.name = name; filled.push('name'); }
       else if (!next.name) { next.name = 'Unknown item'; generated.push('name'); }
 
       // Location is owned by GPS — only let AI fill it when GPS produced nothing.
       if (!next.loc) {
-        if (r.location) { next.loc = r.location; filled.push('location'); }
+        if (loc) { next.loc = loc; filled.push('location'); }
         else { next.loc = 'UNASSIGNED'; generated.push('location'); }
       }
 
-      if (r.ean) { next.ean = r.ean; filled.push('EAN'); }
-      if (r.qty != null) { next.stock = String(r.qty); filled.push('qty'); }
-      if (r.unit) { next.unit = r.unit; filled.push('unit'); }
+      if (ean) { next.ean = ean; filled.push('EAN'); }
+      if (qty != null) { next.stock = String(qty); filled.push('qty'); }
+      if (unit) { next.unit = unit; filled.push('unit'); }
       else if (!next.unit) { next.unit = 'EA'; }
 
       return next;
