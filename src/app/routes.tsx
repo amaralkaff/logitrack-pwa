@@ -14,6 +14,7 @@ import SuccessScreen from '@/features/scan/SuccessScreen';
 import ErrorScreen from '@/features/scan/ErrorScreen';
 import ManualScreen from '@/features/scan/ManualScreen';
 import SyncQueueScreen from '@/features/sync/SyncQueueScreen';
+import LabelsScreen from '@/features/dev/LabelsScreen';
 
 export const router = createBrowserRouter([
   {
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
       { path: 'scan/success',element: <RequireAuth><SuccessScreen/></RequireAuth> },
       { path: 'scan/error',  element: <RequireAuth><ErrorScreen/></RequireAuth> },
       { path: 'sync',        element: <RequireAuth><SyncQueueScreen/></RequireAuth> },
+      { path: 'labels',      element: <RequireAuth><LabelsScreen/></RequireAuth> },
     ],
   },
 ]);
