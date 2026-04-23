@@ -12,6 +12,7 @@ import { db } from '@/data/db';
 import { ScanToFillSheet, type VisionResult } from '@/features/scan/ScanToFillSheet';
 import { useGpsLocation } from '@/features/inventory/useGpsLocation';
 import { MiniMap } from '@/features/inventory/MiniMap';
+import { ImageWithLightbox } from '@/ui/ImageLightbox';
 import { nanoid } from '@/lib/nanoid';
 
 interface Props {
@@ -273,7 +274,7 @@ export default function ItemFormScreen({ mode }: Props) {
 
         {form.imageUrl && (
           <div style={{ position: 'relative' }}>
-            <img
+            <ImageWithLightbox
               src={form.imageUrl}
               alt="Product"
               style={{

@@ -13,6 +13,7 @@ import { db } from '@/data/db';
 import { txRepo } from '@/data/repos/transactions';
 import { useGpsLocation } from '@/features/inventory/useGpsLocation';
 import { MiniMap } from '@/features/inventory/MiniMap';
+import { ImageWithLightbox } from '@/ui/ImageLightbox';
 
 export default function SuccessScreen() {
   const t = useTheme();
@@ -136,7 +137,7 @@ export default function SuccessScreen() {
         </div>
 
         {aiResult?.imageDataUrl && (
-          <img
+          <ImageWithLightbox
             src={aiResult.imageDataUrl}
             alt="Captured"
             style={{

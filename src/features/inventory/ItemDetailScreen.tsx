@@ -6,6 +6,7 @@ import { TopBar, btnIcon } from '@/ui/TopBar';
 import { Btn } from '@/ui/Btn';
 import { Badge } from '@/ui/Badge';
 import { MiniMap } from '@/features/inventory/MiniMap';
+import { ImageWithLightbox } from '@/ui/ImageLightbox';
 import { Icon } from '@/design/icons/Icon';
 import { useTheme } from '@/design/theme';
 import { RADIUS, TYPE } from '@/design/tokens';
@@ -61,7 +62,7 @@ export default function ItemDetailScreen() {
       />
       <div style={{ flex: 1, overflow: 'auto', padding: '0 20px' }}>
         {item.imageUrl ? (
-          <img
+          <ImageWithLightbox
             src={item.imageUrl}
             alt={item.name}
             style={{
