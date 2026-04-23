@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { connectMongo } from '../_lib/mongo';
-import { Item, Tx } from '../_lib/models';
-import { ok, bad, methodAllowed } from '../_lib/respond';
+import { connectMongo } from '../_lib/mongo.js';
+import { Item, Tx } from '../_lib/models.js';
+import { ok, bad, methodAllowed } from '../_lib/respond.js';
 import { randomUUID } from 'node:crypto';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

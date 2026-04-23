@@ -1,0 +1,16 @@
+node_modules
+dist
+build
+.vercel
+.git
+.github
+.idea
+.vscode
+*.log
+coverage
+.env
+.env.local
+.env.*.local
+bun.lock
+*.tsbuildinfo
+public/tesseract

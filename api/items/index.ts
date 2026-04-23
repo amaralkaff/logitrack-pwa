@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { connectMongo } from '../_lib/mongo';
-import { Item } from '../_lib/models';
-import { ok, bad, methodAllowed } from '../_lib/respond';
+import { connectMongo } from '../_lib/mongo.js';
+import { Item } from '../_lib/models.js';
+import { ok, bad, methodAllowed } from '../_lib/respond.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!methodAllowed(req, res, ['GET', 'POST'])) return;

@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
 const ItemSchema = new Schema(
   {
@@ -15,14 +15,7 @@ const ItemSchema = new Schema(
   { versionKey: false },
 );
 
-ItemSchema.pre('save', function (next) { this.updatedAt = Date.now(); next(); });
-ItemSchema.pre('findOneAndUpdate', function (next) {
-  this.set({ updatedAt: Date.now() });
-  next();
-});
-
-export type ItemDoc = mongoose.InferSchemaType<typeof ItemSchema> & { _id: mongoose.Types.ObjectId };
-export const Item = models.Item || model('Item', ItemSchema);
+export const Item = mongoose.models.Item ?? mongoose.model('Item', ItemSchema);
 
 const TxSchema = new Schema(
   {
@@ -42,4 +35,4 @@ const TxSchema = new Schema(
   { versionKey: false },
 );
 
-export const Tx = models.Tx || model('Tx', TxSchema);
+export const Tx = mongoose.models.Tx ?? mongoose.model('Tx', TxSchema);
