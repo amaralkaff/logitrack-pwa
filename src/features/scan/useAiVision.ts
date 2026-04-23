@@ -92,8 +92,10 @@ export function useAiVision({ enabled, intervalMs = 0, onResult, onError }: UseA
   const snapshot = (): string | null => {
     const v = videoRef.current;
     if (!v || v.readyState < 2) return null;
-    // Full-frame capture; downscale long edge to 1280 to keep JPEG under ~300 KB.
-    const MAX = 1280;
+    // Aggressive downscale — long edge 720 + q 0.72 → ~50–80 KB JPEG.
+    // Gemini 2.5 vision reads fine at this size and processes noticeably faster.
+    const MAX = 720;
+    const QUALITY = 0.72;
     const vw = v.videoWidth || 1280;
     const vh = v.videoHeight || 720;
     const scale = Math.min(1, MAX / Math.max(vw, vh));
@@ -105,7 +107,7 @@ export function useAiVision({ enabled, intervalMs = 0, onResult, onError }: UseA
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
     ctx.drawImage(v, 0, 0, vw, vh, 0, 0, cw, ch);
-    return canvas.toDataURL('image/jpeg', 0.82);
+    return canvas.toDataURL('image/jpeg', QUALITY);
   };
 
   const runOnce = useCallback(async () => {

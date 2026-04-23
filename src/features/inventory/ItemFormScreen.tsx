@@ -10,6 +10,7 @@ import { RADIUS } from '@/design/tokens';
 import { api, ApiError } from '@/data/api';
 import { db } from '@/data/db';
 import { ScanToFillSheet, type VisionResult } from '@/features/scan/ScanToFillSheet';
+import { nanoid } from '@/lib/nanoid';
 
 interface Props {
   mode: 'create' | 'edit';
@@ -84,21 +85,38 @@ export default function ItemFormScreen({ mode }: Props) {
 
   const onScanResult = (r: VisionResult) => {
     const filled: string[] = [];
+    const generated: string[] = [];
     setForm((s) => {
       const next = { ...s };
-      if (!isEdit && r.sku) { next.sku = r.sku; filled.push('SKU'); }
-      if (r.name)            { next.name = r.name; filled.push('name'); }
-      if (r.location)        { next.loc = r.location; filled.push('location'); }
-      if (r.ean)             { next.ean = r.ean; filled.push('EAN'); }
-      if (r.qty != null)     { next.stock = String(r.qty); filled.push('qty'); }
-      if (r.unit)            { next.unit = r.unit; filled.push('unit'); }
+
+      if (!isEdit) {
+        if (r.sku) { next.sku = r.sku; filled.push('SKU'); }
+        else if (!next.sku) {
+          next.sku = `ITM-${nanoid(6).toUpperCase()}`;
+          generated.push('SKU');
+        }
+      }
+
+      if (r.name) { next.name = r.name; filled.push('name'); }
+      else if (!next.name) { next.name = 'Unknown item'; generated.push('name'); }
+
+      if (r.location) { next.loc = r.location; filled.push('location'); }
+      else if (!next.loc) { next.loc = 'UNASSIGNED'; generated.push('location'); }
+
+      if (r.ean) { next.ean = r.ean; filled.push('EAN'); }
+      if (r.qty != null) { next.stock = String(r.qty); filled.push('qty'); }
+      if (r.unit) { next.unit = r.unit; filled.push('unit'); }
+      else if (!next.unit) { next.unit = 'EA'; }
+
       return next;
     });
-    setAiHint(
-      filled.length
-        ? `AI filled ${filled.join(', ')} · ${(r.confidence * 100).toFixed(0)}% conf`
-        : `Nothing extracted · try again with a clearer label`,
-    );
+
+    const confPct = (r.confidence * 100).toFixed(0);
+    const parts: string[] = [];
+    if (filled.length) parts.push(`AI filled ${filled.join(', ')}`);
+    if (generated.length) parts.push(`auto-generated ${generated.join(', ')}`);
+    if (!parts.length) parts.push('Nothing extracted — try again');
+    setAiHint(`${parts.join(' · ')} · ${confPct}% conf`);
   };
 
   const submit = async () => {
