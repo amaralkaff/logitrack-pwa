@@ -225,22 +225,14 @@ export default function ItemFormScreen({ mode }: Props) {
           </div>
         )}
 
-        <Section label="Identity">
-          <Field label="SKU" value={form.sku} editable={!isEdit} onChange={set('sku')} mono placeholder="e.g. MIL-11001" required/>
-          <Field label="Name" value={form.name} editable onChange={set('name')} placeholder="Item name" required/>
-          <Field label="EAN / Barcode" value={form.ean} editable onChange={set('ean')} mono placeholder="8, 12, or 13 digits"/>
-        </Section>
-
-        <Section label="Location">
-          <Field label="Location code" value={form.loc} editable onChange={set('loc')} mono placeholder="A-12-03" required/>
-          <Field label="Zone" value={form.zone} editable onChange={set('zone')} placeholder="Optional — A / B / …"/>
-        </Section>
-
-        <Section label="Stock">
-          <Field label="Quantity on hand" value={form.stock} editable onChange={set('stock')} type="number" mono/>
-          <Field label="Reorder threshold" value={form.reorderAt} editable onChange={set('reorderAt')} type="number" mono/>
-          <Field label="Unit" value={form.unit} editable onChange={set('unit')} placeholder="EA / BOX / KG …"/>
-        </Section>
+        <Field label="SKU" value={form.sku} editable={!isEdit} onChange={set('sku')} mono placeholder="e.g. MIL-11001" required/>
+        <Field label="Name" value={form.name} editable onChange={set('name')} placeholder="Item name" required/>
+        <Field label="EAN / Barcode" value={form.ean} editable onChange={set('ean')} mono placeholder="8, 12, or 13 digits"/>
+        <Field label="Location code" value={form.loc} editable onChange={set('loc')} mono placeholder="A-12-03" required/>
+        <Field label="Zone" value={form.zone} editable onChange={set('zone')} placeholder="Optional — A / B / …"/>
+        <Field label="Quantity on hand" value={form.stock} editable onChange={set('stock')} type="number" mono/>
+        <Field label="Reorder threshold" value={form.reorderAt} editable onChange={set('reorderAt')} type="number" mono/>
+        <Field label="Unit" value={form.unit} editable onChange={set('unit')} placeholder="EA / BOX / KG …"/>
 
         {error && (
           <div style={{
@@ -279,14 +271,3 @@ export default function ItemFormScreen({ mode }: Props) {
   );
 }
 
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
-  const t = useTheme();
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.2, color: t.textMute, textTransform: 'uppercase', paddingLeft: 2 }}>
-        {label}
-      </div>
-      {children}
-    </div>
-  );
-}
