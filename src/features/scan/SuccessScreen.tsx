@@ -21,7 +21,10 @@ export default function SuccessScreen() {
   const detectedText = useApp((s) => s.detectedText);
   const clearDetected = useApp((s) => s.setDetected);
 
-  const item = useLiveQuery(() => detectedSku ? db.items.get(detectedSku) : Promise.resolve(undefined), [detectedSku]);
+  const item = useLiveQuery(
+    async () => (detectedSku ? await db.items.get(detectedSku) : undefined),
+    [detectedSku],
+  );
   const [qty, setQty] = useState(1);
   const [elapsed, setElapsed] = useState(0);
 

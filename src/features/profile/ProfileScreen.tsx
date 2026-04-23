@@ -41,8 +41,11 @@ export default function ProfileScreen() {
   const operatorId = useApp((s) => s.operatorId);
   const signOut = useApp((s) => s.signOut);
   const pending = usePendingCount();
-  const user = useLiveQuery(() => operatorId ? db.users.get(operatorId) : Promise.resolve(undefined), [operatorId]);
-  const initials = user?.name?.split(' ').map((s) => s[0]).slice(0, 2).join('').toUpperCase() ?? '??';
+  const user = useLiveQuery(
+    async () => (operatorId ? await db.users.get(operatorId) : undefined),
+    [operatorId],
+  );
+  const initials = user?.name?.split(' ').map((s: string) => s[0]).slice(0, 2).join('').toUpperCase() ?? '??';
 
   return (
     <Screen>

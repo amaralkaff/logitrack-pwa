@@ -18,7 +18,10 @@ export default function HomeScreen() {
   const online = useOnline();
   const pending = usePendingCount();
 
-  const user = useLiveQuery(() => operatorId ? db.users.get(operatorId) : Promise.resolve(undefined), [operatorId]);
+  const user = useLiveQuery(
+    async () => (operatorId ? await db.users.get(operatorId) : undefined),
+    [operatorId],
+  );
   const todaysTx = useLiveQuery(async () => {
     const start = new Date(); start.setHours(0, 0, 0, 0);
     return db.transactions.where('createdAt').aboveOrEqual(start.getTime()).toArray();
@@ -28,10 +31,10 @@ export default function HomeScreen() {
     [], [],
   ) ?? [];
 
-  const inQty = todaysTx.filter((t) => t.dir === 'in').reduce((s, t) => s + t.qty, 0);
-  const outQty = todaysTx.filter((t) => t.dir === 'out').reduce((s, t) => s + t.qty, 0);
+  const inQty = todaysTx.filter((x) => x.dir === 'in').reduce((s, x) => s + x.qty, 0);
+  const outQty = todaysTx.filter((x) => x.dir === 'out').reduce((s, x) => s + x.qty, 0);
   const total = inQty + outQty;
-  const avgMs = todaysTx.length ? Math.round(todaysTx.map((t) => 3800).reduce((a, b) => a + b, 0) / todaysTx.length) : 3800;
+  const avgMs = 3800;
 
   return (
     <Screen>
