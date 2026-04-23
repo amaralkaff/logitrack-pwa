@@ -4,10 +4,12 @@ import { Screen } from '@/ui/layout/Screen';
 import { TopBar } from '@/ui/TopBar';
 import { Field } from '@/ui/Field';
 import { Btn } from '@/ui/Btn';
+import { Icon } from '@/design/icons/Icon';
 import { useTheme } from '@/design/theme';
 import { RADIUS } from '@/design/tokens';
 import { api, ApiError } from '@/data/api';
 import { db } from '@/data/db';
+import { ScanToFillSheet, type VisionResult } from '@/features/scan/ScanToFillSheet';
 
 interface Props {
   mode: 'create' | 'edit';
@@ -45,6 +47,8 @@ export default function ItemFormScreen({ mode }: Props) {
   const [form, setForm] = useState<FormState>(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scanOpen, setScanOpen] = useState(false);
+  const [aiHint, setAiHint] = useState<string | null>(null);
   const isEdit = mode === 'edit';
 
   useEffect(() => {
@@ -53,11 +57,8 @@ export default function ItemFormScreen({ mode }: Props) {
       const local = await db.items.get(routeSku);
       if (local) {
         setForm({
-          sku: local.sku,
-          name: local.name,
-          loc: local.loc,
-          zone: local.zone ?? '',
-          ean: local.ean ?? '',
+          sku: local.sku, name: local.name, loc: local.loc,
+          zone: local.zone ?? '', ean: local.ean ?? '',
           stock: String(local.stock),
           reorderAt: String(local.reorderAt ?? 0),
           unit: local.unit ?? 'EA',
@@ -80,6 +81,20 @@ export default function ItemFormScreen({ mode }: Props) {
   }, [isEdit, routeSku]);
 
   const set = (k: keyof FormState) => (v: string) => setForm((s) => ({ ...s, [k]: v }));
+
+  const onScanResult = (r: VisionResult) => {
+    setForm((s) => ({
+      sku:       (!isEdit && r.sku)                  ? r.sku : s.sku,
+      name:      r.name      ? r.name      : s.name,
+      loc:       r.location  ? r.location  : s.loc,
+      zone:      s.zone,
+      ean:       r.ean       ? r.ean       : s.ean,
+      stock:     r.qty != null ? String(r.qty) : s.stock,
+      reorderAt: s.reorderAt,
+      unit:      r.unit      ? r.unit      : s.unit,
+    }));
+    setAiHint(`AI filled ${[r.sku && 'SKU', r.name && 'name', r.qty != null && 'qty', r.ean && 'EAN', r.unit && 'unit', r.location && 'location'].filter(Boolean).join(', ')} · ${(r.confidence * 100).toFixed(0)}% conf`);
+  };
 
   const submit = async () => {
     setError(null);
@@ -134,8 +149,48 @@ export default function ItemFormScreen({ mode }: Props) {
 
   return (
     <Screen>
-      <TopBar title={isEdit ? 'Edit item' : 'New item'}/>
-      <div style={{ padding: '0 20px 16px', flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <TopBar
+        title={isEdit ? 'Edit item' : 'New item'}
+        trailing={
+          !isEdit ? (
+            <button
+              onClick={() => setScanOpen(true)}
+              style={{
+                height: 36, padding: '0 12px', borderRadius: RADIUS.pill,
+                background: t.accent[500], color: '#fff', border: 'none',
+                display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+                fontWeight: 700, fontSize: 12, marginRight: 8,
+              }}
+            >
+              <Icon name="camera" size={14} color="#fff"/>
+              AI scan
+            </button>
+          ) : undefined
+        }
+      />
+
+      <div style={{
+        flex: 1, minHeight: 0, overflow: 'auto',
+        padding: '4px 20px 16px',
+        display: 'flex', flexDirection: 'column', gap: 10,
+      }}>
+        {aiHint && (
+          <div style={{
+            padding: '10px 12px', borderRadius: RADIUS.md,
+            background: t.accent[500] + '14', border: `1px solid ${t.accent[500]}44`,
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            <Icon name="bolt" size={14} color={t.accent[400]}/>
+            <div style={{ flex: 1, fontSize: 12, color: t.textDim }}>{aiHint}</div>
+            <button
+              onClick={() => setAiHint(null)}
+              style={{ background: 'transparent', border: 'none', color: t.textMute, cursor: 'pointer' }}
+            >
+              <Icon name="x" size={14} color={t.textMute}/>
+            </button>
+          </div>
+        )}
+
         <Field label="SKU" value={form.sku} editable={!isEdit} onChange={set('sku')} mono placeholder="MIL-11001" required/>
         <Field label="Name" value={form.name} editable onChange={set('name')} required/>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
@@ -157,17 +212,28 @@ export default function ItemFormScreen({ mode }: Props) {
           }}>{error}</div>
         )}
 
-        <div style={{ flex: 1 }}/>
-
-        <div style={{ display: 'flex', gap: 10, paddingTop: 12 }}>
-          {isEdit && (
-            <Btn kind="danger" size="lg" onClick={remove} style={{ flex: 1 }} icon="trash">Delete</Btn>
-          )}
-          <Btn kind="primary" size="lg" onClick={submit} style={{ flex: 2 }} icon="check">
-            {busy ? 'Saving…' : isEdit ? 'Save changes' : 'Create item'}
-          </Btn>
-        </div>
+        <div style={{ height: 16 }}/>
       </div>
+
+      {/* Sticky bottom action bar — safe-area aware */}
+      <div style={{
+        flexShrink: 0, padding: '10px 20px calc(12px + env(safe-area-inset-bottom))',
+        background: t.bg, borderTop: `1px solid ${t.divider}`,
+        display: 'flex', gap: 10,
+      }}>
+        {isEdit && (
+          <Btn kind="danger" size="lg" onClick={remove} style={{ flex: 1 }} icon="trash">Delete</Btn>
+        )}
+        <Btn kind="primary" size="lg" onClick={submit} style={{ flex: 2 }} icon="check">
+          {busy ? 'Saving…' : isEdit ? 'Save changes' : 'Create item'}
+        </Btn>
+      </div>
+
+      <ScanToFillSheet
+        open={scanOpen}
+        onClose={() => setScanOpen(false)}
+        onResult={onScanResult}
+      />
     </Screen>
   );
 }
