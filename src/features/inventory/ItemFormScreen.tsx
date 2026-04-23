@@ -10,6 +10,7 @@ import { RADIUS } from '@/design/tokens';
 import { api, ApiError } from '@/data/api';
 import { db } from '@/data/db';
 import { ScanToFillSheet, type VisionResult } from '@/features/scan/ScanToFillSheet';
+import { useGpsLocation } from '@/features/inventory/useGpsLocation';
 import { nanoid } from '@/lib/nanoid';
 
 interface Props {
@@ -50,7 +51,20 @@ export default function ItemFormScreen({ mode }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
   const [aiHint, setAiHint] = useState<string | null>(null);
+  const gps = useGpsLocation();
   const isEdit = mode === 'edit';
+
+  // Auto-capture GPS on mount for new items so the location is always
+  // the actual device position, no manual picking required.
+  useEffect(() => {
+    if (isEdit) return;
+    if (form.loc) return; // respect any prefill or prior fix
+    (async () => {
+      const fix = await gps.capture();
+      if (fix) setForm((s) => ({ ...s, loc: fix.address }));
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!isEdit || !routeSku) return;
@@ -100,8 +114,11 @@ export default function ItemFormScreen({ mode }: Props) {
       if (r.name) { next.name = r.name; filled.push('name'); }
       else if (!next.name) { next.name = 'Unknown item'; generated.push('name'); }
 
-      if (r.location) { next.loc = r.location; filled.push('location'); }
-      else if (!next.loc) { next.loc = 'UNASSIGNED'; generated.push('location'); }
+      // Location is owned by GPS — only let AI fill it when GPS produced nothing.
+      if (!next.loc) {
+        if (r.location) { next.loc = r.location; filled.push('location'); }
+        else { next.loc = 'UNASSIGNED'; generated.push('location'); }
+      }
 
       if (r.ean) { next.ean = r.ean; filled.push('EAN'); }
       if (r.qty != null) { next.stock = String(r.qty); filled.push('qty'); }
@@ -228,7 +245,38 @@ export default function ItemFormScreen({ mode }: Props) {
         <Field label="SKU" value={form.sku} editable={!isEdit} onChange={set('sku')} mono placeholder="e.g. MIL-11001" required/>
         <Field label="Name" value={form.name} editable onChange={set('name')} placeholder="Item name" required/>
         <Field label="EAN / Barcode" value={form.ean} editable onChange={set('ean')} mono placeholder="8, 12, or 13 digits"/>
-        <Field label="Location code" value={form.loc} editable onChange={set('loc')} mono placeholder="A-12-03" required/>
+        <Field
+          label="Location"
+          value={form.loc}
+          editable
+          onChange={set('loc')}
+          placeholder={gps.loading ? 'Getting GPS…' : 'Auto-detected from device GPS'}
+          required
+          suffix={
+            <button
+              type="button"
+              onClick={async () => {
+                const fix = await gps.capture();
+                if (fix) setForm((s) => ({ ...s, loc: fix.address }));
+              }}
+              aria-label="Refresh GPS"
+              disabled={gps.loading}
+              style={{
+                width: 32, height: 32, borderRadius: RADIUS.sm, border: 'none',
+                background: t.accent[500], color: '#fff', cursor: gps.loading ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                opacity: gps.loading ? 0.5 : 1,
+              }}
+            >
+              <Icon name={gps.loading ? 'sync' : 'mapPin'} size={16} color="#fff"/>
+            </button>
+          }
+        />
+        {gps.error && (
+          <div style={{ fontSize: 11, color: t.danger, paddingLeft: 2, marginTop: -4 }}>
+            GPS: {gps.error}
+          </div>
+        )}
         <Field label="Zone" value={form.zone} editable onChange={set('zone')} placeholder="Optional — A / B / …"/>
         <Field label="Quantity on hand" value={form.stock} editable onChange={set('stock')} type="number" mono/>
         <Field label="Reorder threshold" value={form.reorderAt} editable onChange={set('reorderAt')} type="number" mono/>
