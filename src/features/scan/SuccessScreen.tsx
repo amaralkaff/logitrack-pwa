@@ -12,6 +12,7 @@ import { useApp } from '@/app/store';
 import { db } from '@/data/db';
 import { txRepo } from '@/data/repos/transactions';
 import { useGpsLocation } from '@/features/inventory/useGpsLocation';
+import { MiniMap } from '@/features/inventory/MiniMap';
 
 export default function SuccessScreen() {
   const t = useTheme();
@@ -45,13 +46,15 @@ export default function SuccessScreen() {
   const [qty, setQty] = useState(() => cleanQty(aiResult?.qty));
   const [batch, setBatch] = useState(() => cleanStr(aiResult?.batch));
   const [gpsLoc, setGpsLoc] = useState<string>('');
+  const [gpsLat, setGpsLat] = useState<number | null>(null);
+  const [gpsLng, setGpsLng] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const gps = useGpsLocation();
 
   useEffect(() => {
     (async () => {
       const fix = await gps.capture();
-      if (fix) setGpsLoc(fix.address);
+      if (fix) { setGpsLoc(fix.address); setGpsLat(fix.lat); setGpsLng(fix.lng); }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -172,6 +175,9 @@ export default function SuccessScreen() {
           value={gps.loading ? 'Getting GPS…' : (gpsLoc || item.loc)}
           suffix={<Icon name="mapPin" size={16} color={gpsLoc ? t.accent[400] : t.textDim}/>}
         />
+        {gpsLat != null && gpsLng != null && (
+          <MiniMap lat={gpsLat} lng={gpsLng} height={140} label={gpsLoc}/>
+        )}
         <Field
           label="Batch / Lot"
           value={batch}

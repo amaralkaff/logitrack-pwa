@@ -14,6 +14,8 @@ export const Item = z.object({
   name: z.string(),
   ean: z.string().optional(),
   loc: z.string(),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
   stock: z.number().int().nonnegative(),
   reorderAt: z.number().int().nonnegative().default(0),
   unit: z.string().default('EA'),

@@ -26,6 +26,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       reorderAt: Number(body.reorderAt ?? 0),
       unit: body.unit ?? 'EA',
       imageUrl: body.imageUrl ?? undefined,
+      lat: typeof body.lat === 'number' ? body.lat : undefined,
+      lng: typeof body.lng === 'number' ? body.lng : undefined,
     });
     return ok(res, doc.toObject(), 201);
   } catch (e) {

@@ -6,6 +6,8 @@ const ItemSchema = new Schema(
     name: { type: String, required: true, index: true },
     ean: { type: String },
     loc: { type: String, required: true },
+    lat: { type: Number },
+    lng: { type: Number },
     zone: { type: String },
     stock: { type: Number, required: true, min: 0, default: 0 },
     reorderAt: { type: Number, default: 0 },

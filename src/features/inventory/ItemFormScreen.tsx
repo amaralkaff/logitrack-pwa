@@ -11,6 +11,7 @@ import { api, ApiError } from '@/data/api';
 import { db } from '@/data/db';
 import { ScanToFillSheet, type VisionResult } from '@/features/scan/ScanToFillSheet';
 import { useGpsLocation } from '@/features/inventory/useGpsLocation';
+import { MiniMap } from '@/features/inventory/MiniMap';
 import { nanoid } from '@/lib/nanoid';
 
 interface Props {
@@ -27,6 +28,8 @@ interface FormState {
   reorderAt: string;
   unit: string;
   imageUrl: string;
+  lat?: number;
+  lng?: number;
 }
 
 const EMPTY: FormState = { sku: '', name: '', loc: '', zone: '', ean: '', stock: '0', reorderAt: '0', unit: 'EA', imageUrl: '' };
@@ -67,7 +70,7 @@ export default function ItemFormScreen({ mode }: Props) {
     if (form.loc) return; // respect any prefill or prior fix
     (async () => {
       const fix = await gps.capture();
-      if (fix) setForm((s) => ({ ...s, loc: fix.address }));
+      if (fix) setForm((s) => ({ ...s, loc: fix.address, lat: fix.lat, lng: fix.lng }));
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -87,6 +90,7 @@ export default function ItemFormScreen({ mode }: Props) {
           reorderAt: String(remote.reorderAt ?? 0),
           unit: remote.unit ?? 'EA',
           imageUrl: remote.imageUrl ?? '',
+          lat: remote.lat, lng: remote.lng,
         });
       } catch {
         if (local) {
@@ -97,6 +101,7 @@ export default function ItemFormScreen({ mode }: Props) {
             reorderAt: String(local.reorderAt ?? 0),
             unit: local.unit ?? 'EA',
             imageUrl: local.imageUrl ?? '',
+            lat: local.lat, lng: local.lng,
           });
         }
       }
@@ -193,6 +198,8 @@ export default function ItemFormScreen({ mode }: Props) {
         reorderAt: Number(form.reorderAt) || 0,
         unit: form.unit.trim() || 'EA',
         imageUrl: form.imageUrl || undefined,
+        lat: form.lat,
+        lng: form.lng,
       };
       if (isEdit) {
         const { sku: _, ...patch } = payload;
@@ -324,7 +331,7 @@ export default function ItemFormScreen({ mode }: Props) {
               type="button"
               onClick={async () => {
                 const fix = await gps.capture();
-                if (fix) setForm((s) => ({ ...s, loc: fix.address }));
+                if (fix) setForm((s) => ({ ...s, loc: fix.address, lat: fix.lat, lng: fix.lng }));
               }}
               aria-label="Refresh GPS"
               disabled={gps.loading}
@@ -343,6 +350,9 @@ export default function ItemFormScreen({ mode }: Props) {
           <div style={{ fontSize: 11, color: t.danger, paddingLeft: 2, marginTop: -4 }}>
             GPS: {gps.error}
           </div>
+        )}
+        {form.lat != null && form.lng != null && (
+          <MiniMap lat={form.lat} lng={form.lng} height={160} label={form.loc}/>
         )}
         <Field label="Zone" value={form.zone} editable onChange={set('zone')} placeholder="Optional — A / B / …"/>
         <Field label="Quantity on hand" value={form.stock} editable onChange={set('stock')} type="number" mono/>

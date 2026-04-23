@@ -5,6 +5,7 @@ import { Screen } from '@/ui/layout/Screen';
 import { TopBar, btnIcon } from '@/ui/TopBar';
 import { Btn } from '@/ui/Btn';
 import { Badge } from '@/ui/Badge';
+import { MiniMap } from '@/features/inventory/MiniMap';
 import { Icon } from '@/design/icons/Icon';
 import { useTheme } from '@/design/theme';
 import { RADIUS, TYPE } from '@/design/tokens';
@@ -87,11 +88,17 @@ export default function ItemDetailScreen() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, paddingBottom: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, paddingBottom: 10 }}>
           <Stat label="Stock" value={String(item.stock)} unit={item.unit}/>
-          <Stat label="Location" value={item.loc}/>
+          <Stat label="Location" value={item.loc.length > 20 ? item.loc.slice(0, 20) + '…' : item.loc}/>
           <Stat label="Reorder @" value={String(item.reorderAt)}/>
         </div>
+
+        {item.lat != null && item.lng != null && (
+          <div style={{ paddingBottom: 14 }}>
+            <MiniMap lat={item.lat} lng={item.lng} height={160} label={item.loc}/>
+          </div>
+        )}
 
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: t.textMute, padding: '8px 0' }}>LAST 24H</div>
         {history.length === 0 && <div style={{ fontSize: 12, color: t.textMute, padding: '6px 0' }}>No activity yet.</div>}
