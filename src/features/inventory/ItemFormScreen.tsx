@@ -83,17 +83,22 @@ export default function ItemFormScreen({ mode }: Props) {
   const set = (k: keyof FormState) => (v: string) => setForm((s) => ({ ...s, [k]: v }));
 
   const onScanResult = (r: VisionResult) => {
-    setForm((s) => ({
-      sku:       (!isEdit && r.sku)                  ? r.sku : s.sku,
-      name:      r.name      ? r.name      : s.name,
-      loc:       r.location  ? r.location  : s.loc,
-      zone:      s.zone,
-      ean:       r.ean       ? r.ean       : s.ean,
-      stock:     r.qty != null ? String(r.qty) : s.stock,
-      reorderAt: s.reorderAt,
-      unit:      r.unit      ? r.unit      : s.unit,
-    }));
-    setAiHint(`AI filled ${[r.sku && 'SKU', r.name && 'name', r.qty != null && 'qty', r.ean && 'EAN', r.unit && 'unit', r.location && 'location'].filter(Boolean).join(', ')} · ${(r.confidence * 100).toFixed(0)}% conf`);
+    const filled: string[] = [];
+    setForm((s) => {
+      const next = { ...s };
+      if (!isEdit && r.sku) { next.sku = r.sku; filled.push('SKU'); }
+      if (r.name)            { next.name = r.name; filled.push('name'); }
+      if (r.location)        { next.loc = r.location; filled.push('location'); }
+      if (r.ean)             { next.ean = r.ean; filled.push('EAN'); }
+      if (r.qty != null)     { next.stock = String(r.qty); filled.push('qty'); }
+      if (r.unit)            { next.unit = r.unit; filled.push('unit'); }
+      return next;
+    });
+    setAiHint(
+      filled.length
+        ? `AI filled ${filled.join(', ')} · ${(r.confidence * 100).toFixed(0)}% conf`
+        : `Nothing extracted · try again with a clearer label`,
+    );
   };
 
   const submit = async () => {
@@ -149,31 +154,41 @@ export default function ItemFormScreen({ mode }: Props) {
 
   return (
     <Screen>
-      <TopBar
-        title={isEdit ? 'Edit item' : 'New item'}
-        trailing={
-          !isEdit ? (
-            <button
-              onClick={() => setScanOpen(true)}
-              style={{
-                height: 36, padding: '0 12px', borderRadius: RADIUS.pill,
-                background: t.accent[500], color: '#fff', border: 'none',
-                display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
-                fontWeight: 700, fontSize: 12, marginRight: 8,
-              }}
-            >
-              <Icon name="camera" size={14} color="#fff"/>
-              AI scan
-            </button>
-          ) : undefined
-        }
-      />
+      <TopBar title={isEdit ? 'Edit item' : 'New item'}/>
 
       <div style={{
         flex: 1, minHeight: 0, overflow: 'auto',
-        padding: '4px 20px 16px',
-        display: 'flex', flexDirection: 'column', gap: 10,
+        padding: '4px 16px 12px',
+        display: 'flex', flexDirection: 'column', gap: 12,
       }}>
+        {!isEdit && (
+          <button
+            onClick={() => setScanOpen(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '14px 16px', borderRadius: RADIUS.md,
+              background: t.accent[500] + '14', border: `1px solid ${t.accent[500]}66`,
+              color: t.text, cursor: 'pointer', width: '100%',
+              fontFamily: 'inherit',
+            }}
+          >
+            <div style={{
+              width: 36, height: 36, borderRadius: RADIUS.sm,
+              background: t.accent[500], display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Icon name="camera" size={18} color="#fff"/>
+            </div>
+            <div style={{ flex: 1, textAlign: 'left' }}>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>Scan label with AI</div>
+              <div style={{ fontSize: 11, color: t.textDim, marginTop: 2 }}>
+                Auto-fills SKU, name, qty, unit, EAN, location
+              </div>
+            </div>
+            <Icon name="chevron" size={16} color={t.textMute}/>
+          </button>
+        )}
+
         {aiHint && (
           <div style={{
             padding: '10px 12px', borderRadius: RADIUS.md,
@@ -184,40 +199,48 @@ export default function ItemFormScreen({ mode }: Props) {
             <div style={{ flex: 1, fontSize: 12, color: t.textDim }}>{aiHint}</div>
             <button
               onClick={() => setAiHint(null)}
-              style={{ background: 'transparent', border: 'none', color: t.textMute, cursor: 'pointer' }}
+              aria-label="Dismiss"
+              style={{ width: 28, height: 28, background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               <Icon name="x" size={14} color={t.textMute}/>
             </button>
           </div>
         )}
 
-        <Field label="SKU" value={form.sku} editable={!isEdit} onChange={set('sku')} mono placeholder="MIL-11001" required/>
-        <Field label="Name" value={form.name} editable onChange={set('name')} required/>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <Field label="Location" value={form.loc} editable onChange={set('loc')} mono required/>
-          <Field label="Zone" value={form.zone} editable onChange={set('zone')}/>
-        </div>
-        <Field label="EAN / Barcode" value={form.ean} editable onChange={set('ean')} mono/>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-          <Field label="Stock" value={form.stock} editable onChange={set('stock')} type="number" mono/>
-          <Field label="Reorder @" value={form.reorderAt} editable onChange={set('reorderAt')} type="number" mono/>
-          <Field label="Unit" value={form.unit} editable onChange={set('unit')}/>
-        </div>
+        <Section label="Identity">
+          <Field label="SKU" value={form.sku} editable={!isEdit} onChange={set('sku')} mono placeholder="e.g. MIL-11001" required/>
+          <Field label="Name" value={form.name} editable onChange={set('name')} placeholder="Item name" required/>
+          <Field label="EAN / Barcode" value={form.ean} editable onChange={set('ean')} mono placeholder="8, 12, or 13 digits"/>
+        </Section>
+
+        <Section label="Location">
+          <Field label="Location code" value={form.loc} editable onChange={set('loc')} mono placeholder="A-12-03" required/>
+          <Field label="Zone" value={form.zone} editable onChange={set('zone')} placeholder="Optional — A / B / …"/>
+        </Section>
+
+        <Section label="Stock">
+          <Field label="Quantity on hand" value={form.stock} editable onChange={set('stock')} type="number" mono/>
+          <Field label="Reorder threshold" value={form.reorderAt} editable onChange={set('reorderAt')} type="number" mono/>
+          <Field label="Unit" value={form.unit} editable onChange={set('unit')} placeholder="EA / BOX / KG …"/>
+        </Section>
 
         {error && (
           <div style={{
-            padding: 10, borderRadius: RADIUS.md,
+            padding: 12, borderRadius: RADIUS.md,
             background: t.danger + '22', color: t.danger,
-            fontSize: 12, fontWeight: 600,
-          }}>{error}</div>
+            fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            <Icon name="warn" size={16} color={t.danger}/>
+            {error}
+          </div>
         )}
 
-        <div style={{ height: 16 }}/>
+        <div style={{ height: 8 }}/>
       </div>
 
       {/* Sticky bottom action bar — safe-area aware */}
       <div style={{
-        flexShrink: 0, padding: '10px 20px calc(12px + env(safe-area-inset-bottom))',
+        flexShrink: 0, padding: '10px 16px calc(12px + env(safe-area-inset-bottom))',
         background: t.bg, borderTop: `1px solid ${t.divider}`,
         display: 'flex', gap: 10,
       }}>
@@ -235,5 +258,17 @@ export default function ItemFormScreen({ mode }: Props) {
         onResult={onScanResult}
       />
     </Screen>
+  );
+}
+
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+  const t = useTheme();
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.2, color: t.textMute, textTransform: 'uppercase', paddingLeft: 2 }}>
+        {label}
+      </div>
+      {children}
+    </div>
   );
 }

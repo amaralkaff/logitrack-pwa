@@ -3,30 +3,28 @@ import { GoogleGenAI, Type } from '@google/genai';
 let cached: GoogleGenAI | null = null;
 
 /**
- * Returns a Gemini client. Prefers Vertex AI (billed against the GCP project,
- * no per-key quota); falls back to the Gemini Developer API when GEMINI_API_KEY
- * is set and VERTEX_PROJECT is not.
+ * Gemini client. API key is the default (free tier is per-minute, resets);
+ * Vertex AI takes over when VERTEX_PROJECT is set AND no key is present.
  */
 export function gemini(): GoogleGenAI {
   if (cached) return cached;
 
+  const apiKey = process.env.GEMINI_API_KEY;
   const project = process.env.VERTEX_PROJECT ?? process.env.GOOGLE_CLOUD_PROJECT;
   const location = process.env.VERTEX_LOCATION ?? 'global';
-  const apiKey = process.env.GEMINI_API_KEY;
 
-  if (project) {
-    cached = new GoogleGenAI({ vertexai: true, project, location });
-  } else if (apiKey) {
+  if (apiKey) {
     cached = new GoogleGenAI({ apiKey });
+  } else if (project) {
+    cached = new GoogleGenAI({ vertexai: true, project, location });
   } else {
-    throw new Error('Set VERTEX_PROJECT (preferred) or GEMINI_API_KEY');
+    throw new Error('Set GEMINI_API_KEY or VERTEX_PROJECT');
   }
   return cached;
 }
 
 export function geminiModel(): string {
-  // Vertex exposes gemini-2.0-flash under the same short id.
-  return process.env.GEMINI_MODEL ?? 'gemini-2.0-flash';
+  return process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
 }
 
 export const LABEL_SCHEMA = {
