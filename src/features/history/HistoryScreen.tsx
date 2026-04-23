@@ -1,4 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useNavigate } from 'react-router';
 import { Screen } from '@/ui/layout/Screen';
 import { BottomNav } from '@/ui/BottomNav';
 import { TopBar } from '@/ui/TopBar';
@@ -50,6 +51,7 @@ function agoLabel(ms: number): string {
 
 export default function HistoryScreen() {
   const t = useTheme();
+  const nav = useNavigate();
   const all = useLiveQuery(
     async () => {
       const rows = await db.transactions.orderBy('createdAt').reverse().limit(100).toArray();
@@ -78,11 +80,15 @@ export default function HistoryScreen() {
               const c = r.dir === 'in' ? t.incoming : t.outgoing;
               const synced = Boolean(r.syncedAt);
               return (
-                <div key={r.localId} style={{
-                  padding: '10px 12px', marginBottom: 8, borderRadius: RADIUS.md,
-                  background: t.surface, border: `1px solid ${t.divider}`,
-                  display: 'flex', alignItems: 'center', gap: 10,
-                }}>
+                <div
+                  key={r.localId}
+                  onClick={() => nav(`/inv/${encodeURIComponent(r.sku)}`)}
+                  style={{
+                    padding: '10px 12px', marginBottom: 8, borderRadius: RADIUS.md,
+                    background: t.surface, border: `1px solid ${t.divider}`,
+                    display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
+                  }}
+                >
                   <ItemThumb src={r.imageUrl} size={40}/>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

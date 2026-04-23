@@ -25,16 +25,30 @@ export default function ItemDetailScreen() {
   const localItem = useLiveQuery(() => db.items.get(sku), [sku]);
   const [item, setItem] = React.useState(localItem);
   React.useEffect(() => { setItem(localItem); }, [localItem]);
-  React.useEffect(() => {
+  const refetch = React.useCallback(async () => {
     if (!sku) return;
-    (async () => {
-      try {
-        const remote = await (await import('@/data/api')).api.items.get(sku);
-        setItem(remote);
-        await db.items.put({ ...remote, updatedAt: remote.updatedAt ?? Date.now() });
-      } catch { /* offline */ }
-    })();
+    try {
+      const remote = await (await import('@/data/api')).api.items.get(sku);
+      setItem(remote);
+      await db.items.put({ ...remote, updatedAt: remote.updatedAt ?? Date.now() });
+    } catch { /* offline */ }
   }, [sku]);
+
+  React.useEffect(() => { void refetch(); }, [refetch]);
+
+  // Refresh when the tab gets focus or becomes visible — picks up remote
+  // stock changes (another device's incoming/outgoing tx) without a full
+  // page reload.
+  React.useEffect(() => {
+    const onFocus = () => void refetch();
+    const onVis = () => { if (document.visibilityState === 'visible') void refetch(); };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [refetch]);
 
   const history = useLiveQuery(
     () => db.transactions.where('sku').equals(sku).reverse().limit(8).sortBy('createdAt'),
@@ -89,10 +103,9 @@ export default function ItemDetailScreen() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, paddingBottom: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, paddingBottom: 10 }}>
           <Stat label="Stock" value={String(item.stock)} unit={item.unit}/>
-          <Stat label="Location" value={item.loc.length > 20 ? item.loc.slice(0, 20) + '…' : item.loc}/>
-          <Stat label="Reorder @" value={String(item.reorderAt)}/>
+          <Stat label="Location" value={item.loc.length > 24 ? item.loc.slice(0, 24) + '…' : item.loc}/>
         </div>
 
         {item.lat != null && item.lng != null && (
@@ -101,7 +114,9 @@ export default function ItemDetailScreen() {
           </div>
         )}
 
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: t.textMute, padding: '8px 0' }}>LAST 24H</div>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: t.textMute, padding: '8px 0' }}>
+          ACTIVITY · {history.length}
+        </div>
         {history.length === 0 && <div style={{ fontSize: 12, color: t.textMute, padding: '6px 0' }}>No activity yet.</div>}
         {history.map((r) => {
           const c = r.dir === 'in' ? t.incoming : t.outgoing;
@@ -109,17 +124,17 @@ export default function ItemDetailScreen() {
             <div
               key={r.localId}
               style={{
-                padding: '10px 0', borderBottom: `1px solid ${t.divider}`,
-                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '8px 0', borderBottom: `1px solid ${t.divider}`,
+                display: 'flex', alignItems: 'center', gap: 10, minWidth: 0,
               }}
             >
-              <div style={{ fontSize: 14, fontWeight: 700, color: c, width: 42, fontVariantNumeric: 'tabular-nums' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: c, width: 44, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>
                 {r.dir === 'in' ? '+' : '−'}{r.qty}
               </div>
-              <div style={{ flex: 1, fontSize: 12, color: t.textDim }}>
-                {new Date(r.createdAt).toLocaleString()} · {r.operatorId}
+              <div style={{ flex: 1, minWidth: 0, fontSize: 11, color: t.textDim, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {compactTime(r.createdAt)} · {r.operatorId}
               </div>
-              <div style={{ fontSize: 10, color: t.textMute, letterSpacing: 0.5 }}>{r.source.toUpperCase()}</div>
+              <div style={{ fontSize: 10, color: t.textMute, letterSpacing: 0.5, flexShrink: 0 }}>{r.source.toUpperCase()}</div>
             </div>
           );
         })}
@@ -130,6 +145,15 @@ export default function ItemDetailScreen() {
       </div>
     </Screen>
   );
+}
+
+function compactTime(ms: number): string {
+  const d = new Date(ms);
+  const diff = Date.now() - ms;
+  if (diff < 60_000) return 'just now';
+  if (diff < 3600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3600_000)}h ago`;
+  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 function Stat({ label, value, unit }: { label: string; value: string; unit?: string }) {
