@@ -2,7 +2,6 @@ import { useCallback } from 'react';
 import { useAiVision, type VisionResult } from './useAiVision';
 import { Icon } from '@/design/icons/Icon';
 import { useTheme } from '@/design/theme';
-import { RADIUS } from '@/design/tokens';
 
 interface Props {
   open: boolean;
