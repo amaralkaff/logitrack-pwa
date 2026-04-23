@@ -40,6 +40,7 @@ export const LABEL_SCHEMA = {
     ean:        { type: Type.STRING, description: '8, 12, or 13 digit barcode / EAN / UPC if visible as digits. null if not visible.' },
     unit:       { type: Type.STRING, description: 'Unit of measure abbreviation (EA, BOX, CAN, KG, L, M, etc). null if not inferable.' },
     location:   { type: Type.STRING, description: 'Storage location code if visible (e.g. A-12-03). null otherwise.' },
+    dir:        { type: Type.STRING, description: 'Transaction direction inferred from label keywords. Return "in" for incoming/receipt/received/arrival/inbound/stock-in/GRN/PO, "out" for outgoing/shipment/issued/outbound/delivery/dispatch/picked/consumed/DO/SO. null if nothing on the label hints at a direction.' },
     confidence: { type: Type.NUMBER, description: 'Your own confidence 0-1 that the extracted data is correct and complete.' },
     raw_text:   { type: Type.STRING, description: 'All text you read from the image, for audit.' },
   },
@@ -54,4 +55,5 @@ Rules:
 - SKU formats to recognize: "MIL-11001", "SKU-77421", "PN 12345", any ALPHA-DIGITS or ALPHA DIGITS pattern. Normalize to uppercase with a hyphen.
 - Prefer the on-label quantity over any interpretation. Integer only.
 - Keep name concise — the product name, not the whole label.
+- Direction: infer "in" vs "out" from label keywords — receipt/received/inbound/GRN/PO/arrival → "in"; delivery/shipment/issued/outbound/DO/SO/dispatch/picked → "out". Only set a value when the label actually carries such a keyword.
 - Confidence: set low (<0.5) if the image is blurry, partial, or ambiguous.`;

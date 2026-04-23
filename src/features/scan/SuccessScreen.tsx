@@ -19,7 +19,7 @@ export default function SuccessScreen() {
   const t = useTheme();
   const nav = useNavigate();
   const operatorId = useApp((s) => s.operatorId);
-  const dir = useApp((s) => s.scanDir);
+  const storeDir = useApp((s) => s.scanDir);
   const source = useApp((s) => s.scanSource) ?? 'ocr';
   const detectedSku = useApp((s) => s.detectedSku);
   const detectedText = useApp((s) => s.detectedText);
@@ -46,6 +46,10 @@ export default function SuccessScreen() {
 
   const [qty, setQty] = useState(() => cleanQty(aiResult?.qty));
   const [batch, setBatch] = useState(() => cleanStr(aiResult?.batch));
+  const [dir, setDir] = useState<'in' | 'out'>(
+    aiResult?.dir === 'in' || aiResult?.dir === 'out' ? aiResult.dir : storeDir,
+  );
+  const dirAutoDetected = aiResult?.dir === 'in' || aiResult?.dir === 'out';
   const [gpsLoc, setGpsLoc] = useState<string>('');
   const [gpsLat, setGpsLat] = useState<number | null>(null);
   const [gpsLng, setGpsLng] = useState<number | null>(null);
@@ -81,9 +85,7 @@ export default function SuccessScreen() {
     }
   };
 
-  const dirColor = dir === 'in' ? t.incoming : t.outgoing;
   const dirLabel = dir === 'in' ? 'Incoming' : 'Outgoing';
-  const dirIcon = dir === 'in' ? 'arrowDown' : 'arrowUp';
 
   if (!item) return (
     <Screen>
@@ -127,14 +129,37 @@ export default function SuccessScreen() {
               {item.sku}
             </div>
           </div>
-          <div style={{
-            padding: '4px 8px', borderRadius: 6, background: dirColor + '22', color: dirColor,
-            fontSize: 10, fontWeight: 800, letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 4,
-          }}>
-            <Icon name={dirIcon} size={12} color={dirColor}/>
-            {dir === 'in' ? 'IN' : 'OUT'}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            {(['in', 'out'] as const).map((d) => {
+              const on = d === dir;
+              const c = d === 'in' ? t.incoming : t.outgoing;
+              return (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setDir(d)}
+                  style={{
+                    padding: '6px 10px', borderRadius: 8,
+                    background: on ? c + '22' : 'transparent',
+                    color: on ? c : t.textMute,
+                    border: `1px solid ${on ? c + '66' : t.divider}`,
+                    fontSize: 10, fontWeight: 800, letterSpacing: 0.5,
+                    display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer',
+                  }}
+                >
+                  <Icon name={d === 'in' ? 'arrowDown' : 'arrowUp'} size={12} color={on ? c : t.textMute}/>
+                  {d === 'in' ? 'IN' : 'OUT'}
+                </button>
+              );
+            })}
           </div>
         </div>
+        {dirAutoDetected && (
+          <div style={{ fontSize: 11, color: t.accent[400], display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Icon name="bolt" size={12} color={t.accent[400]}/>
+            Direction auto-detected from label
+          </div>
+        )}
 
         {aiResult?.imageDataUrl && (
           <ImageWithLightbox

@@ -9,6 +9,8 @@ export interface VisionResult {
   ean?: string | null;
   unit?: string | null;
   location?: string | null;
+  /** AI-inferred transaction direction from label keywords. */
+  dir?: 'in' | 'out' | null;
   confidence: number;
   raw_text: string;
   /** The captured frame used for this recognition (data URL). */

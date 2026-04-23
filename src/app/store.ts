@@ -34,6 +34,7 @@ export interface AiScanResult {
   ean?: string | null;
   unit?: string | null;
   location?: string | null;
+  dir?: 'in' | 'out' | null;
   confidence: number;
   raw_text: string;
   imageDataUrl?: string;
