@@ -34,7 +34,9 @@ export default function HomeScreen() {
   const inQty = todaysTx.filter((x) => x.dir === 'in').reduce((s, x) => s + x.qty, 0);
   const outQty = todaysTx.filter((x) => x.dir === 'out').reduce((s, x) => s + x.qty, 0);
   const total = inQty + outQty;
-  const avgMs = 3800;
+  const lastTxAt = todaysTx.length
+    ? Math.max(...todaysTx.map((x) => x.createdAt))
+    : null;
 
   return (
     <Screen>
@@ -70,16 +72,29 @@ export default function HomeScreen() {
           background: `linear-gradient(135deg, ${t.accent[600]}, ${t.accent[500]})`,
           color: '#fff', display: 'flex', flexDirection: 'column', gap: 4,
         }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, opacity: 0.8 }}>TODAY'S SHIFT</div>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, opacity: 0.8 }}>TODAY</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 14 }}>
             <div>
               <span style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.8 }}>{total}</span>
               <span style={{ fontSize: 12, opacity: 0.8, marginLeft: 4 }}>items</span>
             </div>
-            <div style={{ opacity: 0.4 }}>·</div>
-            <div style={{ fontSize: 12 }}>IN {inQty} / OUT {outQty}</div>
+            {total > 0 && (
+              <>
+                <div style={{ opacity: 0.4 }}>·</div>
+                <div style={{ fontSize: 12 }}>IN {inQty} / OUT {outQty}</div>
+              </>
+            )}
           </div>
-          <div style={{ fontSize: 11, opacity: 0.75, marginTop: 4 }}>Avg entry · {(avgMs / 1000).toFixed(1)}s</div>
+          {lastTxAt && (
+            <div style={{ fontSize: 11, opacity: 0.75, marginTop: 4 }}>
+              Last entry · {agoLabel(lastTxAt)} ago
+            </div>
+          )}
+          {!lastTxAt && (
+            <div style={{ fontSize: 11, opacity: 0.75, marginTop: 4 }}>
+              No transactions yet — tap Scan to log your first.
+            </div>
+          )}
         </div>
       </div>
 
@@ -170,6 +185,16 @@ export default function HomeScreen() {
       <BottomNav/>
     </Screen>
   );
+}
+
+function agoLabel(ms: number): string {
+  const s = Math.max(1, Math.floor((Date.now() - ms) / 1000));
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
 }
 
 function QuickTile({ icon, color, label, sub, onClick }: { icon: IconName; color: string; label: string; sub: string; onClick: () => void }) {
