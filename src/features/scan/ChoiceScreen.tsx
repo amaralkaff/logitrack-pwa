@@ -25,10 +25,9 @@ export default function ChoiceScreen() {
     fontWeight: 700 as const, fontSize: 13, color: t.textDim, cursor: 'pointer',
   };
 
-  const pick = (source: 'qr' | 'ocr' | 'manual') => {
+  const pick = (source: 'ocr' | 'manual') => {
     setScanSource(source);
-    if (source === 'qr') nav('/scan/qr');
-    else if (source === 'ocr') nav('/scan/ocr');
+    if (source === 'ocr') nav('/scan/ocr');
     else nav('/scan/manual');
   };
 
@@ -51,15 +50,24 @@ export default function ChoiceScreen() {
           Choose input method
         </div>
 
-        <MethodCard icon="qr" title="QR / Barcode scan" desc="Fastest. Auto-detects and logs in ≈2s." badge="2s" badgeColor={t.success} onClick={() => pick('qr')}/>
-        <MethodCard icon="camera" title="OCR text scan" desc="Capture SKU, batch, lot from paper labels." badge="4s" badgeColor={t.accent[500]} onClick={() => pick('ocr')}/>
-        <MethodCard icon="keyboard" title="Manual entry" desc="Type SKU or search inventory." badge="SLOW" badgeColor={t.textMute} onClick={() => pick('manual')}/>
+        <MethodCard
+          icon="camera" title="OCR text scan"
+          desc="Capture SKU, batch, lot numbers from paper labels."
+          badge="4s" badgeColor={t.accent[500]}
+          onClick={() => pick('ocr')}
+        />
+        <MethodCard
+          icon="keyboard" title="Manual entry"
+          desc="Type SKU or search inventory."
+          badge="SLOW" badgeColor={t.textMute}
+          onClick={() => pick('manual')}
+        />
       </div>
 
       <div style={{ padding: '0 20px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
         <Icon name="bolt" size={14} color={t.accent[400]}/>
         <div style={{ fontSize: 11, color: t.textDim }}>
-          Last used: <b style={{ color: t.text }}>QR / Barcode</b> · swipe right to repeat
+          Last used: <b style={{ color: t.text }}>OCR</b>
         </div>
       </div>
     </Screen>

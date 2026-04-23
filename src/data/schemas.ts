@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const Direction = z.enum(['in', 'out']);
 export type Direction = z.infer<typeof Direction>;
 
-export const Source = z.enum(['qr', 'ocr', 'manual']);
+export const Source = z.enum(['ocr', 'manual']);
 export type Source = z.infer<typeof Source>;
 
 export const Condition = z.enum(['good', 'damaged', 'missing']);

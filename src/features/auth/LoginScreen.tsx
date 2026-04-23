@@ -51,7 +51,6 @@ export default function LoginScreen() {
 
           <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
             {([
-              { icon: 'qr', label: 'QR / Barcode' },
               { icon: 'camera', label: 'Text OCR' },
               { icon: 'keyboard', label: 'Manual' },
             ] as const).map((f) => (

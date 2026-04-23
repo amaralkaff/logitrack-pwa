@@ -29,7 +29,7 @@ export default function EmptyScreen() {
             Start by scanning an incoming shipment. We'll build your inventory automatically.
           </div>
         </div>
-        <Btn kind="primary" size="lg" icon="qr" style={{ marginTop: 8 }} onClick={() => nav('/scan/qr')}>
+        <Btn kind="primary" size="lg" icon="camera" style={{ marginTop: 8 }} onClick={() => nav('/scan/ocr')}>
           Scan first item
         </Btn>
       </div>

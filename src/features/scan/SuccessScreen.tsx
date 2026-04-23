@@ -16,7 +16,7 @@ export default function SuccessScreen() {
   const nav = useNavigate();
   const operatorId = useApp((s) => s.operatorId);
   const dir = useApp((s) => s.scanDir);
-  const source = useApp((s) => s.scanSource) ?? 'qr';
+  const source = useApp((s) => s.scanSource) ?? 'ocr';
   const detectedSku = useApp((s) => s.detectedSku);
   const detectedText = useApp((s) => s.detectedText);
   const clearDetected = useApp((s) => s.setDetected);

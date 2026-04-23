@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router';
 import { Screen } from '@/ui/layout/Screen';
 import { TopBar } from '@/ui/TopBar';
 import { Btn } from '@/ui/Btn';
-import { Icon } from '@/design/icons/Icon';
+import { Icon, type IconName } from '@/design/icons/Icon';
 import { useTheme } from '@/design/theme';
 import { RADIUS } from '@/design/tokens';
 
@@ -24,26 +24,25 @@ export default function ErrorScreen() {
           <Icon name="warn" size={40} color={t.danger} stroke={2.4}/>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Code not recognized</div>
+          <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3 }}>Text not recognized</div>
           <div style={{ fontSize: 13, color: t.textDim, marginTop: 6, lineHeight: 1.5, maxWidth: 260 }}>
-            Try better lighting or move closer. If the label is damaged, use OCR or enter manually.
+            Try better lighting or hold steadier. If the label is damaged, enter manually.
           </div>
         </div>
 
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-          <FallbackRow icon="flash" color={t.warning} label="Turn on flash" onClick={() => nav('/scan/qr')}/>
-          <FallbackRow icon="camera" color={t.accent[400]} label="Switch to OCR text scan" onClick={() => nav('/scan/ocr')}/>
+          <FallbackRow icon="flash" color={t.warning} label="Turn on flash" onClick={() => nav('/scan/ocr')}/>
           <FallbackRow icon="keyboard" color={t.textDim} label="Enter manually" onClick={() => nav('/scan/manual')}/>
         </div>
 
         <div style={{ flex: 1 }}/>
-        <Btn kind="primary" size="lg" block icon="sync" onClick={() => nav('/scan/qr')}>Try again</Btn>
+        <Btn kind="primary" size="lg" block icon="sync" onClick={() => nav('/scan/ocr')}>Try again</Btn>
       </div>
     </Screen>
   );
 }
 
-function FallbackRow({ icon, color, label, onClick }: { icon: Parameters<typeof Icon>[0]['name']; color: string; label: string; onClick: () => void }) {
+function FallbackRow({ icon, color, label, onClick }: { icon: IconName; color: string; label: string; onClick: () => void }) {
   const t = useTheme();
   return (
     <div
