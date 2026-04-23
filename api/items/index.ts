@@ -8,8 +8,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     await connectMongo();
     if (req.method === 'GET') {
-      // List view: skip imageUrl (can be large). Fetch full doc in /:sku.
-      const items = await Item.find().select('-imageUrl').sort({ name: 1 }).lean();
+      // Include imageUrl so thumbnails render in list / recent / history rows.
+      const items = await Item.find().sort({ name: 1 }).lean();
       return ok(res, items);
     }
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;

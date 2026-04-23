@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { Screen } from '@/ui/layout/Screen';
 import { BottomNav } from '@/ui/BottomNav';
 import { Icon, type IconName } from '@/design/icons/Icon';
+import { ItemThumb } from '@/ui/ItemThumb';
 import { useTheme } from '@/design/theme';
 import { RADIUS, TYPE } from '@/design/tokens';
 import { useApp } from '@/app/store';
@@ -27,7 +28,14 @@ export default function HomeScreen() {
     return db.transactions.where('createdAt').aboveOrEqual(start.getTime()).toArray();
   }, [], []) ?? [];
   const recent = useLiveQuery(
-    () => db.transactions.orderBy('createdAt').reverse().limit(3).toArray(),
+    async () => {
+      const rows = await db.transactions.orderBy('createdAt').reverse().limit(3).toArray();
+      const skus = Array.from(new Set(rows.map((r) => r.sku)));
+      const items = await db.items.bulkGet(skus);
+      const imgBySku = new Map<string, string | undefined>();
+      items.forEach((it, i) => imgBySku.set(skus[i]!, it?.imageUrl));
+      return rows.map((r) => ({ ...r, imageUrl: imgBySku.get(r.sku) }));
+    },
     [], [],
   ) ?? [];
 
@@ -162,17 +170,15 @@ export default function HomeScreen() {
                 display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
               }}
             >
-              <div style={{
-                width: 28, height: 28, borderRadius: 6, background: c + '22',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Icon name={r.dir === 'in' ? 'arrowDown' : 'arrowUp'} size={14} color={c}/>
-              </div>
+              <ItemThumb src={r.imageUrl} size={36}/>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {r.sku}
                 </div>
-                <div style={{ fontSize: 11, fontFamily: TYPE.mono, color: t.textMute }}>{r.source.toUpperCase()}</div>
+                <div style={{ fontSize: 11, fontFamily: TYPE.mono, color: t.textMute, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Icon name={r.dir === 'in' ? 'arrowDown' : 'arrowUp'} size={10} color={c}/>
+                  {r.source.toUpperCase()}
+                </div>
               </div>
               <div style={{ fontSize: 14, fontWeight: 700, color: c, fontVariantNumeric: 'tabular-nums' }}>
                 {r.dir === 'in' ? '+' : '−'}{r.qty}

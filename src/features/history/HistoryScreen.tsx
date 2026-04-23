@@ -3,13 +3,16 @@ import { Screen } from '@/ui/layout/Screen';
 import { BottomNav } from '@/ui/BottomNav';
 import { TopBar } from '@/ui/TopBar';
 import { Icon } from '@/design/icons/Icon';
+import { ItemThumb } from '@/ui/ItemThumb';
 import { useTheme } from '@/design/theme';
 import { RADIUS, TYPE } from '@/design/tokens';
 import { db } from '@/data/db';
 import type { Transaction } from '@/data/schemas';
 
-function groupByDay(rows: Transaction[]): Array<{ label: string; rows: Transaction[] }> {
-  const groups: Record<string, Transaction[]> = {};
+type Row = Transaction & { imageUrl?: string; name?: string };
+
+function groupByDay(rows: Row[]): Array<{ label: string; rows: Row[] }> {
+  const groups: Record<string, Row[]> = {};
   const now = new Date();
   const todayKey = dayKey(now);
   const y = new Date(now); y.setDate(now.getDate() - 1);
@@ -48,7 +51,14 @@ function agoLabel(ms: number): string {
 export default function HistoryScreen() {
   const t = useTheme();
   const all = useLiveQuery(
-    () => db.transactions.orderBy('createdAt').reverse().limit(100).toArray(),
+    async () => {
+      const rows = await db.transactions.orderBy('createdAt').reverse().limit(100).toArray();
+      const skus = Array.from(new Set(rows.map((r) => r.sku)));
+      const items = await db.items.bulkGet(skus);
+      const metaBySku = new Map<string, { imageUrl?: string; name?: string }>();
+      items.forEach((it, i) => metaBySku.set(skus[i]!, { imageUrl: it?.imageUrl, name: it?.name }));
+      return rows.map((r) => ({ ...r, imageUrl: metaBySku.get(r.sku)?.imageUrl, name: metaBySku.get(r.sku)?.name }));
+    },
     [], [],
   ) ?? [];
 
@@ -69,23 +79,19 @@ export default function HistoryScreen() {
               const synced = Boolean(r.syncedAt);
               return (
                 <div key={r.localId} style={{
-                  padding: '12px 14px', marginBottom: 8, borderRadius: RADIUS.md,
+                  padding: '10px 12px', marginBottom: 8, borderRadius: RADIUS.md,
                   background: t.surface, border: `1px solid ${t.divider}`,
-                  display: 'flex', alignItems: 'center', gap: 12,
+                  display: 'flex', alignItems: 'center', gap: 10,
                 }}>
-                  <div style={{
-                    width: 32, height: 32, borderRadius: RADIUS.sm, background: c + '22',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <Icon name={r.dir === 'in' ? 'arrowDown' : 'arrowUp'} size={16} color={c}/>
-                  </div>
+                  <ItemThumb src={r.imageUrl} size={40}/>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {r.sku}
+                      {r.name ?? r.sku}
                     </div>
-                    <div style={{ fontSize: 11, color: t.textMute, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      <span style={{ fontFamily: TYPE.mono }}>{r.source.toUpperCase()}</span> · {r.operatorId}
-                      {r.location ? ` · ${shortenText(r.location, 30)}` : ''}
+                    <div style={{ fontSize: 11, color: t.textMute, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Icon name={r.dir === 'in' ? 'arrowDown' : 'arrowUp'} size={10} color={c}/>
+                      <span style={{ fontFamily: TYPE.mono }}>{r.source.toUpperCase()}</span>
+                      {r.location ? ` · ${shortenText(r.location, 24)}` : ''}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>

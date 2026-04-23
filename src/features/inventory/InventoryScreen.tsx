@@ -6,8 +6,9 @@ import { BottomNav } from '@/ui/BottomNav';
 import { TopBar, btnIcon } from '@/ui/TopBar';
 import { Chip } from '@/ui/Chip';
 import { Icon } from '@/design/icons/Icon';
+import { ItemThumb } from '@/ui/ItemThumb';
 import { useTheme } from '@/design/theme';
-import { RADIUS, TYPE } from '@/design/tokens';
+import { TYPE } from '@/design/tokens';
 import { db } from '@/data/db';
 
 type Filter = 'all' | 'low' | string;
@@ -66,12 +67,7 @@ export default function InventoryScreen() {
                 display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
               }}
             >
-              <div style={{
-                width: 40, height: 40, borderRadius: RADIUS.sm, background: t.surface2,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Icon name="box" size={18} color={t.textDim}/>
-              </div>
+              <ItemThumb src={r.imageUrl} size={44} alt={r.name}/>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 2, minWidth: 0 }}>

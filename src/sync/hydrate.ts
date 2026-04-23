@@ -13,6 +13,7 @@ export async function hydrateFromServer(): Promise<void> {
         await db.items.bulkPut(items.map((i) => ({
           sku: i.sku, name: i.name, ean: i.ean, loc: i.loc, zone: i.zone,
           stock: i.stock, reorderAt: i.reorderAt ?? 0, unit: i.unit ?? 'EA',
+          imageUrl: i.imageUrl, lat: i.lat, lng: i.lng,
           updatedAt: i.updatedAt ?? Date.now(),
         })));
       }
