@@ -7,8 +7,14 @@ import { ThemeProvider } from './design/theme';
 import { QueryProvider } from './app/providers/QueryProvider';
 import { registerServiceWorker } from './sync/register-sw';
 import { hydrateFromServer } from './sync/hydrate';
+import { useApp } from './app/store';
 
 import './design/globals.css';
+
+// Legacy session sweep: purge any pre-auth persisted login that
+// lacks a JWT. Forces the user back through /api/auth/signin.
+const __s = useApp.getState();
+if (__s.operatorId && !__s.token) __s.signOut();
 
 void hydrateFromServer();
 registerServiceWorker();
