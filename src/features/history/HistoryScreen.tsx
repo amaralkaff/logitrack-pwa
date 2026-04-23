@@ -24,6 +24,13 @@ function groupByDay(rows: Transaction[]): Array<{ label: string; rows: Transacti
   }));
 }
 
+function shortenText(s: string, max: number): string {
+  if (!s) return '';
+  const t = s.trim();
+  if (t.length <= max) return t;
+  return t.slice(0, max - 1) + '…';
+}
+
 function dayKey(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -73,9 +80,12 @@ export default function HistoryScreen() {
                     <Icon name={r.dir === 'in' ? 'arrowDown' : 'arrowUp'} size={16} color={c}/>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{r.sku}</div>
-                    <div style={{ fontSize: 11, color: t.textMute, marginTop: 2 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {r.sku}
+                    </div>
+                    <div style={{ fontSize: 11, color: t.textMute, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       <span style={{ fontFamily: TYPE.mono }}>{r.source.toUpperCase()}</span> · {r.operatorId}
+                      {r.location ? ` · ${shortenText(r.location, 30)}` : ''}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>

@@ -74,10 +74,12 @@ export default function InventoryScreen() {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 2 }}>
-                  <span style={{ fontSize: 11, fontFamily: TYPE.mono, color: t.textMute }}>{r.sku}</span>
-                  <span style={{ width: 2, height: 2, background: t.textMute, borderRadius: 1 }}/>
-                  <span style={{ fontSize: 11, color: t.textDim }}>{r.loc}</span>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 2, minWidth: 0 }}>
+                  <span style={{ fontSize: 11, fontFamily: TYPE.mono, color: t.textMute, flexShrink: 0 }}>{r.sku}</span>
+                  <span style={{ width: 2, height: 2, background: t.textMute, borderRadius: 1, flexShrink: 0 }}/>
+                  <span style={{ fontSize: 11, color: t.textDim, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+                    {shortenLoc(r.loc)}
+                  </span>
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
@@ -92,4 +94,15 @@ export default function InventoryScreen() {
       <BottomNav/>
     </Screen>
   );
+}
+
+/** Compact display of a long GPS address — keep the first meaningful segments. */
+function shortenLoc(loc: string): string {
+  if (!loc) return '—';
+  const s = loc.trim();
+  const m = s.match(/^(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)$/);
+  if (m) return `${parseFloat(m[1]!).toFixed(3)}, ${parseFloat(m[2]!).toFixed(3)}`;
+  const parts = s.split(',').map((x) => x.trim()).filter(Boolean);
+  if (parts.length <= 2) return s;
+  return `${parts[0]}, ${parts[1]}`;
 }
