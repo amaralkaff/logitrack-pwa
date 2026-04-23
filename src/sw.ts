@@ -13,6 +13,16 @@ declare const self: ServiceWorkerGlobalScope;
 // Precache build assets (manifest injected at build time).
 precacheAndRoute(self.__WB_MANIFEST);
 
+// Tesseract runtime assets — cache first, long-lived (~30 MB total across
+// worker + wasm + eng traineddata; fetched lazily on first OCR).
+registerRoute(
+  ({ url }) => url.origin === self.location.origin && url.pathname.startsWith('/tesseract/'),
+  new CacheFirst({
+    cacheName: 'tesseract-runtime',
+    plugins: [new ExpirationPlugin({ maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 90 })],
+  }),
+);
+
 // Google Fonts — long-lived cache.
 registerRoute(
   ({ url }) => url.origin === 'https://fonts.googleapis.com',

@@ -61,10 +61,15 @@ export function useOcr({ enabled, onRecognized, intervalMs = 1200 }: UseOcrOpts)
         const caps = (track?.getCapabilities?.() ?? {}) as { torch?: boolean };
         setTorchSupported(!!caps.torch);
 
-        // Lazy-load Tesseract (large wasm).
+        // Lazy-load Tesseract. Use self-hosted assets so no external CDN fetch
+        // (avoids SSL/cert failures on locked-down networks).
         const { createWorker } = await import('tesseract.js');
         if (cancelled) return;
-        const w = await createWorker('eng');
+        const w = await createWorker('eng', 1, {
+          workerPath: '/tesseract/worker.min.js',
+          corePath: '/tesseract/',
+          langPath: '/tesseract/lang',
+        });
         if (cancelled) { await w.terminate(); return; }
         workerRef.current = w as unknown as TesseractWorker;
         setReady(true);
