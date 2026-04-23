@@ -13,8 +13,8 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
-      registerType: 'prompt',
-      injectRegister: false, // we register manually in src/sw/register.ts
+      registerType: 'autoUpdate',
+      injectRegister: false, // we register manually in src/sync/register-sw.ts
       devOptions: {
         enabled: true,
         type: 'module',

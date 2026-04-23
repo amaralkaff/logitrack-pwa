@@ -2,17 +2,21 @@ import { registerSW } from 'virtual:pwa-register';
 
 export function registerServiceWorker() {
   if (typeof window === 'undefined') return;
-  registerSW({
+  // eslint-disable-next-line prefer-const
+  let updateSW: (reloadPage?: boolean) => Promise<void>;
+  updateSW = registerSW({
     immediate: true,
     onNeedRefresh() {
-      // Simple auto-update; in future show a toast.
-      // eslint-disable-next-line no-console
-      console.info('[sw] update available, reloading…');
-      location.reload();
+      // Skip waiting + reload exactly once. Plugin handles the SKIP_WAITING
+      // message + 'controllerchange' listener internally when reloadPage=true.
+      void updateSW(true);
     },
     onOfflineReady() {
+      // no-op; could toast later
+    },
+    onRegisterError(err) {
       // eslint-disable-next-line no-console
-      console.info('[sw] offline ready');
+      console.error('[sw] register error', err);
     },
   });
 }
