@@ -83,7 +83,11 @@ export default function HomeScreen() {
         </div>
       </div>
 
-      <div style={{ padding: '0 20px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <div style={{ padding: '0 20px 12px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+        <QuickTile
+          icon="plus" color={t.accent[500]} label="Add" sub="New item"
+          onClick={() => nav('/inv/new')}
+        />
         <QuickTile
           icon="arrowDown" color={t.incoming} label="Incoming" sub="Scan in"
           onClick={() => { setScanDir('in'); nav('/scan'); }}
@@ -145,20 +149,20 @@ function QuickTile({ icon, color, label, sub, onClick }: { icon: IconName; color
     <div
       onClick={onClick}
       style={{
-        padding: 14, borderRadius: RADIUS.lg, background: t.surface,
+        padding: 12, borderRadius: RADIUS.lg, background: t.surface,
         border: `1px solid ${t.divider}`, cursor: 'pointer',
-        display: 'flex', flexDirection: 'column', gap: 10,
+        display: 'flex', flexDirection: 'column', gap: 8,
       }}
     >
       <div style={{
-        width: 36, height: 36, borderRadius: RADIUS.sm,
+        width: 32, height: 32, borderRadius: RADIUS.sm,
         background: color + '22', display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <Icon name={icon} size={20} color={color} stroke={2.2}/>
+        <Icon name={icon} size={18} color={color} stroke={2.2}/>
       </div>
       <div>
-        <div style={{ fontSize: 15, fontWeight: 700 }}>{label}</div>
-        <div style={{ fontSize: 11, color: t.textMute, marginTop: 2 }}>{sub}</div>
+        <div style={{ fontSize: 14, fontWeight: 700 }}>{label}</div>
+        <div style={{ fontSize: 10, color: t.textMute, marginTop: 2 }}>{sub}</div>
       </div>
     </div>
   );
