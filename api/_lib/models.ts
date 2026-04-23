@@ -10,6 +10,7 @@ const ItemSchema = new Schema(
     stock: { type: Number, required: true, min: 0, default: 0 },
     reorderAt: { type: Number, default: 0 },
     unit: { type: String, default: 'EA' },
+    imageUrl: { type: String },
     updatedAt: { type: Number, default: () => Date.now() },
   },
   { versionKey: false },

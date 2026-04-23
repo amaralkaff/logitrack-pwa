@@ -1,10 +1,10 @@
+import React from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Screen } from '@/ui/layout/Screen';
 import { TopBar, btnIcon } from '@/ui/TopBar';
 import { Btn } from '@/ui/Btn';
 import { Badge } from '@/ui/Badge';
-import { Placeholder } from '@/ui/Placeholder';
 import { Icon } from '@/design/icons/Icon';
 import { useTheme } from '@/design/theme';
 import { RADIUS, TYPE } from '@/design/tokens';
@@ -17,7 +17,23 @@ export default function ItemDetailScreen() {
   const { sku = '' } = useParams();
   const setScanDir = useApp((s) => s.setScanDir);
 
-  const item = useLiveQuery(() => db.items.get(sku), [sku]);
+  // Edit-mode pulls full doc (incl. imageUrl). Detail relies on Dexie which
+  // got its rows from the list endpoint that strips imageUrl, so fetch the
+  // single record via API for rendering.
+  const localItem = useLiveQuery(() => db.items.get(sku), [sku]);
+  const [item, setItem] = React.useState(localItem);
+  React.useEffect(() => { setItem(localItem); }, [localItem]);
+  React.useEffect(() => {
+    if (!sku) return;
+    (async () => {
+      try {
+        const remote = await (await import('@/data/api')).api.items.get(sku);
+        setItem(remote);
+        await db.items.put({ ...remote, updatedAt: remote.updatedAt ?? Date.now() });
+      } catch { /* offline */ }
+    })();
+  }, [sku]);
+
   const history = useLiveQuery(
     () => db.transactions.where('sku').equals(sku).reverse().limit(8).sortBy('createdAt'),
     [sku], [],
@@ -43,7 +59,26 @@ export default function ItemDetailScreen() {
         }
       />
       <div style={{ flex: 1, overflow: 'auto', padding: '0 20px' }}>
-        <Placeholder label="PRODUCT IMAGE" h={132}/>
+        {item.imageUrl ? (
+          <img
+            src={item.imageUrl}
+            alt={item.name}
+            style={{
+              width: '100%', height: 180, objectFit: 'cover',
+              borderRadius: RADIUS.md, border: `1px solid ${t.divider}`,
+              display: 'block',
+            }}
+          />
+        ) : (
+          <div style={{
+            height: 132, borderRadius: RADIUS.md,
+            background: `repeating-linear-gradient(135deg, ${t.surface2} 0 8px, ${t.surface3} 8px 16px)`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: t.textMute, fontFamily: TYPE.mono, fontSize: 11, letterSpacing: 0.5,
+          }}>
+            NO PRODUCT IMAGE
+          </div>
+        )}
         <div style={{ padding: '16px 0 12px' }}>
           <Badge color={low ? t.warning : t.incoming}>{low ? 'Low stock' : 'In stock'}</Badge>
           <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.3, marginTop: 8 }}>{item.name}</div>

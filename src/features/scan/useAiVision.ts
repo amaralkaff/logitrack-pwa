@@ -11,6 +11,8 @@ export interface VisionResult {
   location?: string | null;
   confidence: number;
   raw_text: string;
+  /** The captured frame used for this recognition (data URL). */
+  imageDataUrl?: string;
 }
 
 /** Confidence threshold — below this we force a manual review. */
@@ -141,7 +143,7 @@ export function useAiVision({ enabled, intervalMs = 0, onResult, onError }: UseA
     try {
       const parsed = await api.vision.extract(img) as VisionResult;
       doneRef.current = true;
-      onResult(parsed);
+      onResult({ ...parsed, imageDataUrl: img });
     } catch (e) {
       const raw = (e as Error).message ?? String(e);
       const friendly = /503|overload|unavailable|spike|resource_exhausted|429/i.test(raw)

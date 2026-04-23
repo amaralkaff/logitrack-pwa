@@ -8,7 +8,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     await connectMongo();
     if (req.method === 'GET') {
-      const items = await Item.find().sort({ name: 1 }).lean();
+      // List view: skip imageUrl (can be large). Fetch full doc in /:sku.
+      const items = await Item.find().select('-imageUrl').sort({ name: 1 }).lean();
       return ok(res, items);
     }
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
@@ -24,6 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       stock: Number(body.stock ?? 0),
       reorderAt: Number(body.reorderAt ?? 0),
       unit: body.unit ?? 'EA',
+      imageUrl: body.imageUrl ?? undefined,
     });
     return ok(res, doc.toObject(), 201);
   } catch (e) {

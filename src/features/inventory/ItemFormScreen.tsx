@@ -26,9 +26,10 @@ interface FormState {
   stock: string;
   reorderAt: string;
   unit: string;
+  imageUrl: string;
 }
 
-const EMPTY: FormState = { sku: '', name: '', loc: '', zone: '', ean: '', stock: '0', reorderAt: '0', unit: 'EA' };
+const EMPTY: FormState = { sku: '', name: '', loc: '', zone: '', ean: '', stock: '0', reorderAt: '0', unit: 'EA', imageUrl: '' };
 
 export default function ItemFormScreen({ mode }: Props) {
   const t = useTheme();
@@ -75,26 +76,28 @@ export default function ItemFormScreen({ mode }: Props) {
     if (!isEdit || !routeSku) return;
     (async () => {
       const local = await db.items.get(routeSku);
-      if (local) {
+      // For edit, always hit API so we get the full doc including imageUrl
+      // (the list endpoint strips it).
+      try {
+        const remote = await api.items.get(routeSku);
         setForm({
-          sku: local.sku, name: local.name, loc: local.loc,
-          zone: local.zone ?? '', ean: local.ean ?? '',
-          stock: String(local.stock),
-          reorderAt: String(local.reorderAt ?? 0),
-          unit: local.unit ?? 'EA',
+          sku: remote.sku, name: remote.name, loc: remote.loc,
+          zone: remote.zone ?? '', ean: remote.ean ?? '',
+          stock: String(remote.stock),
+          reorderAt: String(remote.reorderAt ?? 0),
+          unit: remote.unit ?? 'EA',
+          imageUrl: remote.imageUrl ?? '',
         });
-      } else {
-        try {
-          const remote = await api.items.get(routeSku);
+      } catch {
+        if (local) {
           setForm({
-            sku: remote.sku, name: remote.name, loc: remote.loc,
-            zone: remote.zone ?? '', ean: remote.ean ?? '',
-            stock: String(remote.stock),
-            reorderAt: String(remote.reorderAt ?? 0),
-            unit: remote.unit ?? 'EA',
+            sku: local.sku, name: local.name, loc: local.loc,
+            zone: local.zone ?? '', ean: local.ean ?? '',
+            stock: String(local.stock),
+            reorderAt: String(local.reorderAt ?? 0),
+            unit: local.unit ?? 'EA',
+            imageUrl: local.imageUrl ?? '',
           });
-        } catch (e) {
-          setError((e as Error).message);
         }
       }
     })();
@@ -155,6 +158,12 @@ export default function ItemFormScreen({ mode }: Props) {
       if (unit) { next.unit = unit; filled.push('unit'); }
       else if (!next.unit) { next.unit = 'EA'; }
 
+      // Attach the captured frame as the product image when creating.
+      if (r.imageDataUrl && !next.imageUrl) {
+        next.imageUrl = r.imageDataUrl;
+        filled.push('image');
+      }
+
       return next;
     });
 
@@ -183,6 +192,7 @@ export default function ItemFormScreen({ mode }: Props) {
         stock: Number(form.stock) || 0,
         reorderAt: Number(form.reorderAt) || 0,
         unit: form.unit.trim() || 'EA',
+        imageUrl: form.imageUrl || undefined,
       };
       if (isEdit) {
         const { sku: _, ...patch } = payload;
@@ -252,6 +262,33 @@ export default function ItemFormScreen({ mode }: Props) {
             </div>
             <Icon name="chevron" size={16} color={t.textMute}/>
           </button>
+        )}
+
+        {form.imageUrl && (
+          <div style={{ position: 'relative' }}>
+            <img
+              src={form.imageUrl}
+              alt="Product"
+              style={{
+                width: '100%', maxHeight: 220, objectFit: 'cover',
+                borderRadius: RADIUS.md, border: `1px solid ${t.divider}`,
+                display: 'block',
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setForm((s) => ({ ...s, imageUrl: '' }))}
+              aria-label="Remove image"
+              style={{
+                position: 'absolute', top: 8, right: 8,
+                width: 32, height: 32, borderRadius: 16,
+                background: 'rgba(0,0,0,0.6)', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Icon name="x" size={16} color="#fff"/>
+            </button>
+          </div>
         )}
 
         {aiHint && (

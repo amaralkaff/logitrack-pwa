@@ -10,6 +10,7 @@ import { RADIUS, TYPE } from '@/design/tokens';
 import { useApp } from '@/app/store';
 import { db } from '@/data/db';
 import { txRepo } from '@/data/repos/transactions';
+import { useGpsLocation } from '@/features/inventory/useGpsLocation';
 
 export default function SuccessScreen() {
   const t = useTheme();
@@ -29,11 +30,21 @@ export default function SuccessScreen() {
   );
   const [qty, setQty] = useState(() => aiResult?.qty && aiResult.qty > 0 ? aiResult.qty : 1);
   const [elapsed, setElapsed] = useState(0);
+  const [gpsLoc, setGpsLoc] = useState<string>('');
+  const gps = useGpsLocation();
 
   useEffect(() => {
     const start = Date.now();
     const id = setInterval(() => setElapsed(Date.now() - start), 100);
     return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const fix = await gps.capture();
+      if (fix) setGpsLoc(fix.address);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const confirm = async () => {
@@ -44,7 +55,7 @@ export default function SuccessScreen() {
       dir,
       source,
       operatorId,
-      location: item.loc,
+      location: gpsLoc || item.loc,
     });
     clearDetected(null, null);
     clearAi(null);
@@ -107,7 +118,11 @@ export default function SuccessScreen() {
             />
             <Field label="Unit" value={item.unit}/>
           </div>
-          <Field label="Location" value={`${item.loc}${item.zone ? ` · Zone ${item.zone}` : ''}`} suffix={<Icon name="mapPin" size={16} color={t.textDim}/>}/>
+          <Field
+            label="Location (GPS)"
+            value={gps.loading ? 'Getting GPS…' : (gpsLoc || `${item.loc}${item.zone ? ` · Zone ${item.zone}` : ''}`)}
+            suffix={<Icon name="mapPin" size={16} color={gpsLoc ? t.accent[400] : t.textDim}/>}
+          />
           <Field label="Condition" value="Good" suffix={<Icon name="chevron" size={16} color={t.textDim}/>}/>
         </div>
 

@@ -18,6 +18,7 @@ export const Item = z.object({
   reorderAt: z.number().int().nonnegative().default(0),
   unit: z.string().default('EA'),
   zone: z.string().optional(),
+  imageUrl: z.string().optional(),
   updatedAt: z.number().int(),
 });
 export type Item = z.infer<typeof Item>;
