@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { ok, bad, methodAllowed } from '../_lib/respond.js';
-import { gemini, LABEL_PROMPT, LABEL_SCHEMA } from '../_lib/gemini.js';
+import { gemini, geminiModel, LABEL_PROMPT, LABEL_SCHEMA } from '../_lib/gemini.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!methodAllowed(req, res, ['POST'])) return;
@@ -15,7 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const ai = gemini();
     const result = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: geminiModel(),
       contents: [
         {
           role: 'user',
@@ -41,7 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return ok(res, parsed);
   } catch (e) {
     const msg = (e as Error).message ?? String(e);
-    const status = msg.includes('GEMINI_API_KEY') ? 503 : 500;
+    const status = /VERTEX_PROJECT|GEMINI_API_KEY/.test(msg) ? 503 : 500;
     return bad(res, msg, status);
   }
 }
