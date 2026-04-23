@@ -7,28 +7,42 @@ import { Icon } from '@/design/icons/Icon';
 import { useTheme } from '@/design/theme';
 import { RADIUS } from '@/design/tokens';
 import { useApp } from '@/app/store';
-import { usersRepo } from '@/data/repos/users';
+import { api, ApiError } from '@/data/api';
+import { db } from '@/data/db';
+import { hydrateFromServer } from '@/sync/hydrate';
 
 export default function LoginScreen() {
   const t = useTheme();
   const nav = useNavigate();
   const signIn = useApp((s) => s.signIn);
   const [operatorId, setOperatorId] = useState('');
-  const [name, setName] = useState('');
+  const [pin, setPin] = useState('');
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
     setError(null);
     const id = operatorId.trim().toUpperCase();
     if (!id) { setError('Operator ID required'); return; }
+    if (!/^\d{4,8}$/.test(pin)) { setError('PIN must be 4–8 digits'); return; }
 
-    const existing = await usersRepo.get(id);
-    if (!existing) {
-      if (!name.trim()) { setError('Name required for first sign-in'); return; }
-      await usersRepo.put({ operatorId: id, name: name.trim(), role: 'Operator' });
+    setBusy(true);
+    try {
+      const { token, user } = await api.auth.signin({ operatorId: id, pin });
+      signIn(user.operatorId, user.name, token);
+      await db.users.put(user);
+      await hydrateFromServer();
+      nav('/home', { replace: true });
+    } catch (e) {
+      const msg = e instanceof ApiError
+        ? (e.status === 401 ? 'Invalid credentials'
+          : e.status === 429 ? e.message.replace(/^.*error.:"/, '').replace(/".*/, '') || 'Too many attempts'
+          : `${e.status}: ${e.message.slice(0, 120)}`)
+        : (e as Error).message;
+      setError(msg);
+    } finally {
+      setBusy(false);
     }
-    signIn(id);
-    nav('/home', { replace: true });
   };
 
   return (
@@ -50,7 +64,7 @@ export default function LoginScreen() {
             <span style={{ color: t.accent[400] }}>without typing.</span>
           </div>
           <div style={{ fontSize: 15, color: t.textDim, lineHeight: 1.5 }}>
-            AI vision + offline-first. Capture label → auto-fill → log.
+            AI vision + offline-first. Scan label → auto-fill → log.
           </div>
 
           <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
@@ -71,13 +85,15 @@ export default function LoginScreen() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <Field label="Operator ID" value={operatorId} editable onChange={setOperatorId} mono placeholder="e.g. LT-0482" autoFocus/>
-          <Field label="Name (first sign-in)" value={name} editable onChange={setName} placeholder="Your full name"/>
+          <Field label="Operator ID" value={operatorId} editable onChange={setOperatorId} mono placeholder="e.g. OP-001" autoFocus/>
+          <Field label="PIN" value={pin} editable onChange={setPin} mono type="password" placeholder="4–8 digits"/>
           {error && (
             <div style={{ fontSize: 12, color: t.danger, padding: '0 4px' }}>{error}</div>
           )}
           <div style={{ height: 4 }}/>
-          <Btn kind="primary" size="lg" block onClick={submit}>Sign in</Btn>
+          <Btn kind="primary" size="lg" block onClick={submit}>
+            {busy ? 'Signing in…' : 'Sign in'}
+          </Btn>
         </div>
       </div>
     </Screen>

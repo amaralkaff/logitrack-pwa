@@ -70,12 +70,6 @@ export default function ViewfinderScreen() {
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
       />
 
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: `radial-gradient(280px 180px at 50% 46%, transparent 70%, rgba(0,0,0,0.75) 100%)`,
-        pointerEvents: 'none',
-      }}/>
-
       {/* top chrome */}
       <div style={{ position: 'relative', padding: '12px 12px 4px', display: 'flex', alignItems: 'center', gap: 4, zIndex: 2 }}>
         <button
@@ -104,32 +98,15 @@ export default function ViewfinderScreen() {
         )}
       </div>
 
-      {/* reticle (dim when previewing) */}
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-        <div style={{ position: 'relative', width: 300, height: 180, marginTop: -100, opacity: preview ? 0.3 : 1 }}>
-          {(['tl', 'tr', 'bl', 'br'] as const).map((c) => {
-            const s: React.CSSProperties = {
-              position: 'absolute', width: 28, height: 28,
-              borderColor: recognizing ? t.success : t.accent[400],
-              borderStyle: 'solid', borderWidth: 0,
-              transition: 'border-color 140ms ease',
-            };
-            if (c === 'tl') Object.assign(s, { top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3, borderTopLeftRadius: 4 });
-            if (c === 'tr') Object.assign(s, { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3, borderTopRightRadius: 4 });
-            if (c === 'bl') Object.assign(s, { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3, borderBottomLeftRadius: 4 });
-            if (c === 'br') Object.assign(s, { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3, borderBottomRightRadius: 4 });
-            return <div key={c} style={s}/>;
-          })}
-          {ready && !preview && (
-            <div style={{
-              position: 'absolute', left: 0, right: 0, top: '50%', height: 2,
-              background: `linear-gradient(90deg, transparent, ${t.accent[400]}, transparent)`,
-              boxShadow: `0 0 12px ${t.accent[400]}`,
-              animation: 'lt-scan-sweep 1.8s ease-in-out infinite',
-            }}/>
-          )}
-        </div>
-      </div>
+      {/* recognizing pulse bar across the top */}
+      {ready && !preview && recognizing && (
+        <div style={{
+          position: 'absolute', left: 0, right: 0, top: 52, height: 2, zIndex: 2,
+          background: `linear-gradient(90deg, transparent, ${t.accent[400]}, transparent)`,
+          boxShadow: `0 0 10px ${t.accent[400]}`,
+          animation: 'lt-scan-sweep-h 1.2s linear infinite',
+        }}/>
+      )}
 
       {error && !preview && (
         <div style={{
@@ -232,7 +209,7 @@ export default function ViewfinderScreen() {
       )}
 
       <style>{`
-        @keyframes lt-scan-sweep { 0%,100% { transform: translateY(-70px); } 50% { transform: translateY(70px); } }
+        @keyframes lt-scan-sweep-h { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
         @keyframes lt-spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>

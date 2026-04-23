@@ -1,11 +1,13 @@
 import { db } from '@/data/db';
 import { api } from '@/data/api';
+import { useApp } from '@/app/store';
 
-/** Pull authoritative state from API on app boot. Silent on failure (offline). */
+/** Pull authoritative state from API on app boot. Silent on failure (offline / unauth). */
 export async function hydrateFromServer(): Promise<void> {
+  if (!useApp.getState().token) return;
   try {
     const items = await api.items.list();
-    if (Array.isArray(items) && items.length >= 0) {
+    if (Array.isArray(items)) {
       await db.items.clear();
       if (items.length) {
         await db.items.bulkPut(items.map((i) => ({
@@ -16,6 +18,6 @@ export async function hydrateFromServer(): Promise<void> {
       }
     }
   } catch {
-    // offline or API down — Dexie keeps last-seen data
+    // offline / API down / token expired — Dexie keeps last-seen data
   }
 }

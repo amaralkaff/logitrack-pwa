@@ -92,19 +92,19 @@ export function useAiVision({ enabled, intervalMs = 2000, onResult, onError }: U
   const snapshot = (): string | null => {
     const v = videoRef.current;
     if (!v || v.readyState < 2) return null;
-    const canvas = document.createElement('canvas');
+    // Full-frame capture; downscale long edge to 1280 to keep JPEG under ~300 KB.
+    const MAX = 1280;
     const vw = v.videoWidth || 1280;
     const vh = v.videoHeight || 720;
-    // Tight center crop — ~70% x 50% — keeps label in frame, cuts bytes.
-    const cw = Math.round(vw * 0.7);
-    const ch = Math.round(vh * 0.5);
-    const cx = Math.round((vw - cw) / 2);
-    const cy = Math.round((vh - ch) / 2);
+    const scale = Math.min(1, MAX / Math.max(vw, vh));
+    const cw = Math.round(vw * scale);
+    const ch = Math.round(vh * scale);
+    const canvas = document.createElement('canvas');
     canvas.width = cw;
     canvas.height = ch;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
-    ctx.drawImage(v, cx, cy, cw, ch, 0, 0, cw, ch);
+    ctx.drawImage(v, 0, 0, vw, vh, 0, 0, cw, ch);
     return canvas.toDataURL('image/jpeg', 0.82);
   };
 

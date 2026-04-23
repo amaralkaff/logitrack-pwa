@@ -4,8 +4,10 @@ import type { Direction, Source } from '@/data/schemas';
 
 interface AppState {
   operatorId: string | null;
+  operatorName: string | null;
+  token: string | null;
   signedInAt: number | null;
-  signIn: (operatorId: string) => void;
+  signIn: (operatorId: string, name: string, token: string) => void;
   signOut: () => void;
 
   /** Transient per-scan-session state. */
@@ -40,9 +42,12 @@ export const useApp = create<AppState>()(
   persist(
     (set) => ({
       operatorId: null,
+      operatorName: null,
+      token: null,
       signedInAt: null,
-      signIn: (operatorId) => set({ operatorId, signedInAt: Date.now() }),
-      signOut: () => set({ operatorId: null, signedInAt: null }),
+      signIn: (operatorId, operatorName, token) =>
+        set({ operatorId, operatorName, token, signedInAt: Date.now() }),
+      signOut: () => set({ operatorId: null, operatorName: null, token: null, signedInAt: null }),
 
       scanDir: 'in',
       setScanDir: (scanDir) => set({ scanDir }),
@@ -56,6 +61,14 @@ export const useApp = create<AppState>()(
       aiResult: null,
       setAiResult: (aiResult) => set({ aiResult }),
     }),
-    { name: 'logitrack-app', partialize: (s) => ({ operatorId: s.operatorId, signedInAt: s.signedInAt }) },
+    {
+      name: 'logitrack-app',
+      partialize: (s) => ({
+        operatorId: s.operatorId,
+        operatorName: s.operatorName,
+        token: s.token,
+        signedInAt: s.signedInAt,
+      }),
+    },
   ),
 );

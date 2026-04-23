@@ -6,6 +6,9 @@ import itemsBySku from '../api/items/[sku].js';
 import txIndex from '../api/tx/index.js';
 import visionIndex from '../api/vision/index.js';
 import userByOp from '../api/users/[operatorId].js';
+import authSignup from '../api/auth/signup.js';
+import authSignin from '../api/auth/signin.js';
+import { requireAuth } from '../api/_lib/auth-middleware.js';
 
 const app = express();
 
@@ -16,9 +19,8 @@ const allowedOrigins = (process.env.CORS_ORIGINS ?? 'https://logitrack-pwa.verce
 
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin) return cb(null, true); // curl / server-to-server
+    if (!origin) return cb(null, true);
     if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) return cb(null, true);
-    // Also allow any *.vercel.app preview (frontend preview deploys)
     try {
       const { hostname } = new URL(origin);
       if (hostname.endsWith('.vercel.app')) return cb(null, true);
@@ -37,9 +39,16 @@ const wrap = (h: Handler) => async (req: Request, res: Response, next: NextFunct
 
 app.get('/healthz', (_req, res) => res.status(200).json({ ok: true }));
 
+// Auth gates everything below /api/* except /api/auth/*.
+app.use(requireAuth);
+
+// Auth (open)
+app.post('/api/auth/signup', wrap(authSignup as unknown as Handler));
+app.post('/api/auth/signin', wrap(authSignin as unknown as Handler));
+
+// Protected
 app.get('/api/items', wrap(itemsIndex as unknown as Handler));
 app.post('/api/items', wrap(itemsIndex as unknown as Handler));
-
 app.all('/api/items/:sku', wrap(itemsBySku as unknown as Handler));
 
 app.get('/api/tx', wrap(txIndex as unknown as Handler));
