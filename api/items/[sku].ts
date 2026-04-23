@@ -29,9 +29,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     if (!body) return bad(res, 'body required');
     const allowed = ['name', 'ean', 'loc', 'zone', 'stock', 'reorderAt', 'unit', 'imageUrl', 'lat', 'lng'];
+    const stringFields = new Set(['name', 'ean', 'loc', 'zone', 'unit', 'imageUrl']);
+    const cleanStr = (v: unknown): string | undefined => {
+      if (typeof v !== 'string') return undefined;
+      const s = v.trim();
+      if (!s || /^(null|undefined|none|n\/a|-)$/i.test(s)) return undefined;
+      return s;
+    };
     const $set: Record<string, unknown> = {};
-    for (const k of allowed) if (k in body) $set[k] = body[k];
-    const doc = await Item.findOneAndUpdate({ sku }, { $set }, { new: true }).lean();
+    const $unset: Record<string, 1> = {};
+    for (const k of allowed) {
+      if (!(k in body)) continue;
+      if (stringFields.has(k)) {
+        const v = cleanStr(body[k]);
+        if (v === undefined) $unset[k] = 1;
+        else $set[k] = v;
+      } else {
+        $set[k] = body[k];
+      }
+    }
+    const update: Record<string, unknown> = {};
+    if (Object.keys($set).length) update.$set = $set;
+    if (Object.keys($unset).length) update.$unset = $unset;
+    const doc = await Item.findOneAndUpdate({ sku }, update, { new: true }).lean();
     if (!doc) return bad(res, 'not found', 404);
     return ok(res, doc);
   } catch (e) {

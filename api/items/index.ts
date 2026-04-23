@@ -13,21 +13,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return ok(res, items);
     }
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-    if (!body?.sku || !body?.name || !body?.loc) return bad(res, 'sku, name, loc required');
-    const existing = await Item.findOne({ sku: body.sku }).lean();
+    const cleanStr = (v: unknown): string | undefined => {
+      if (typeof v !== 'string') return undefined;
+      const s = v.trim();
+      if (!s || /^(null|undefined|none|n\/a|-)$/i.test(s)) return undefined;
+      return s;
+    };
+    const sku = cleanStr(body?.sku);
+    const name = cleanStr(body?.name);
+    const loc = cleanStr(body?.loc);
+    if (!sku || !name || !loc) return bad(res, 'sku, name, loc required');
+    const existing = await Item.findOne({ sku }).lean();
     if (existing) return bad(res, 'sku already exists', 409);
     const doc = await Item.create({
-      sku: String(body.sku).trim(),
-      name: String(body.name).trim(),
-      ean: body.ean ?? undefined,
-      loc: String(body.loc).trim(),
-      zone: body.zone ?? undefined,
-      stock: Number(body.stock ?? 0),
-      reorderAt: Number(body.reorderAt ?? 0),
-      unit: body.unit ?? 'EA',
-      imageUrl: body.imageUrl ?? undefined,
-      lat: typeof body.lat === 'number' ? body.lat : undefined,
-      lng: typeof body.lng === 'number' ? body.lng : undefined,
+      sku,
+      name,
+      ean: cleanStr(body?.ean),
+      loc,
+      zone: cleanStr(body?.zone),
+      stock: Number.isFinite(Number(body?.stock)) ? Math.max(0, Math.round(Number(body.stock))) : 0,
+      reorderAt: Number.isFinite(Number(body?.reorderAt)) ? Math.max(0, Math.round(Number(body.reorderAt))) : 0,
+      unit: cleanStr(body?.unit) ?? 'EA',
+      imageUrl: cleanStr(body?.imageUrl),
+      lat: typeof body?.lat === 'number' && Number.isFinite(body.lat) ? body.lat : undefined,
+      lng: typeof body?.lng === 'number' && Number.isFinite(body.lng) ? body.lng : undefined,
     });
     return ok(res, doc.toObject(), 201);
   } catch (e) {

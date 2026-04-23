@@ -72,7 +72,7 @@ export default function ViewfinderScreen() {
           <Icon name="x" color="#fff" size={20}/>
         </button>
         <div style={{ flex: 1, textAlign: 'center', fontSize: 13, fontWeight: 700, letterSpacing: 0.3 }}>
-          AI Vision · auto-scanning
+          AI Vision
         </div>
         {torchSupported && (
           <button
@@ -104,7 +104,7 @@ export default function ViewfinderScreen() {
           {!ready ? 'Opening camera…' : recognizing ? 'Reading label…' : 'Point at label'}
         </div>
         <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
-          {!ready ? 'Waiting for camera' : 'Hands-free — auto-captures when it sees a label'}
+          {!ready ? 'Waiting for camera' : 'Tap the shutter when the label is centered'}
         </div>
       </div>
 
@@ -157,9 +157,6 @@ export default function ViewfinderScreen() {
               <div style={{ width: 48, height: 48, borderRadius: 24, background: '#fff' }}/>
             )}
           </button>
-        </div>
-        <div style={{ marginTop: 10, textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>
-          Optional · if auto misses, tap to force capture
         </div>
       </div>
 

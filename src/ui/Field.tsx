@@ -22,6 +22,9 @@ export function Field({
   editable, onChange, onClick, type = 'text', autoFocus,
 }: FieldProps) {
   const t = useTheme();
+  // Defensive: never surface a literal 'null' / 'undefined' to the user.
+  const cleanedValue =
+    value && /^(null|undefined|none|n\/a|-)$/i.test(value.trim()) ? '' : value;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{
@@ -44,7 +47,7 @@ export function Field({
         {editable ? (
           <input
             type={type}
-            value={value ?? ''}
+            value={cleanedValue ?? ''}
             autoFocus={autoFocus}
             placeholder={placeholder}
             onChange={(e: ChangeEvent<HTMLInputElement>) => onChange?.(e.target.value)}
@@ -59,10 +62,10 @@ export function Field({
           <div style={{
             flex: 1, fontSize: 16, fontWeight: 500,
             fontFamily: mono ? TYPE.mono : TYPE.family,
-            color: value ? t.text : t.textMute,
+            color: cleanedValue ? t.text : t.textMute,
             letterSpacing: mono ? 0.4 : 0,
           }}>
-            {value || placeholder}
+            {cleanedValue || placeholder}
           </div>
         )}
         {suffix && <div style={{ color: t.textDim, display: 'flex', alignItems: 'center' }}>{suffix}</div>}

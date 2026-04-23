@@ -20,13 +20,13 @@ const MIN_CONFIDENCE = 0.55;
 
 interface UseAiVisionOpts {
   enabled: boolean;
-  /** Auto-snapshot cadence in ms. Default 1800 (auto-scan). Set 0 for manual only. */
+  /** Auto-snapshot cadence in ms. Default 0 = manual only (shutter). */
   intervalMs?: number;
   onResult: (r: VisionResult) => void;
   onError?: (err: string) => void;
 }
 
-export function useAiVision({ enabled, intervalMs = 1800, onResult, onError }: UseAiVisionOpts) {
+export function useAiVision({ enabled, intervalMs = 0, onResult, onError }: UseAiVisionOpts) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<number | null>(null);
