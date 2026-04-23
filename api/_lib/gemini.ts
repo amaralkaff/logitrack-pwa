@@ -13,12 +13,15 @@ export function gemini(): GoogleGenAI {
   const project = process.env.VERTEX_PROJECT ?? process.env.GOOGLE_CLOUD_PROJECT;
   const location = process.env.VERTEX_LOCATION ?? 'global';
 
-  if (apiKey) {
-    cached = new GoogleGenAI({ apiKey });
-  } else if (project) {
+  // Vertex first: project-level quota is orders of magnitude higher than
+  // the Gemini Developer API free tier. Fall back to the key only when
+  // the project isn't configured (e.g. local dev).
+  if (project) {
     cached = new GoogleGenAI({ vertexai: true, project, location });
+  } else if (apiKey) {
+    cached = new GoogleGenAI({ apiKey });
   } else {
-    throw new Error('Set GEMINI_API_KEY or VERTEX_PROJECT');
+    throw new Error('Set VERTEX_PROJECT or GEMINI_API_KEY');
   }
   return cached;
 }
