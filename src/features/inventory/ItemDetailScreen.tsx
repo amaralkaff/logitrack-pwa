@@ -36,7 +36,11 @@ export default function ItemDetailScreen() {
     <Screen>
       <TopBar
         title="Item"
-        trailing={<button style={btnIcon()}><Icon name="dots" color={t.text} size={20}/></button>}
+        trailing={
+          <button style={btnIcon()} onClick={() => nav(`/inv/${encodeURIComponent(sku)}/edit`)} aria-label="Edit item">
+            <Icon name="edit" color={t.text} size={20}/>
+          </button>
+        }
       />
       <div style={{ flex: 1, overflow: 'auto', padding: '0 20px' }}>
         <Placeholder label="PRODUCT IMAGE" h={132}/>

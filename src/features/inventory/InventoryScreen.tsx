@@ -34,6 +34,9 @@ export default function InventoryScreen() {
         leading={null}
         trailing={
           <div style={{ display: 'flex' }}>
+            <button style={btnIcon()} onClick={() => nav('/inv/new')} aria-label="Add item">
+              <Icon name="plus" color={t.text} size={22}/>
+            </button>
             <button style={btnIcon()}><Icon name="search" color={t.text} size={20}/></button>
             <button style={btnIcon()}><Icon name="filter" color={t.text} size={20}/></button>
           </div>

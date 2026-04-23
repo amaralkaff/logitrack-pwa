@@ -5,12 +5,12 @@ import { RouterProvider } from 'react-router';
 import { router } from './app/routes';
 import { ThemeProvider } from './design/theme';
 import { QueryProvider } from './app/providers/QueryProvider';
-import { seedIfEmpty } from './data/db';
 import { registerServiceWorker } from './sync/register-sw';
+import { hydrateFromServer } from './sync/hydrate';
 
 import './design/globals.css';
 
-void seedIfEmpty();
+void hydrateFromServer();
 registerServiceWorker();
 
 const rootEl = document.getElementById('root');

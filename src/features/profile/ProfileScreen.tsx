@@ -73,7 +73,6 @@ export default function ProfileScreen() {
         <Row icon="cloud" label="Sync" value={`${pending} pending`} color={pending ? t.warning : t.success} onClick={() => nav('/sync')}/>
         <Row icon="eye" label="Outdoor mode" value="Auto"/>
         <Row icon="settings" label="Scan preferences"/>
-        <Row icon="list" label="OCR test labels" onClick={() => nav('/labels')}/>
         <Row icon="x" label="Sign out" color={t.danger} onClick={() => { signOut(); nav('/', { replace: true }); }}/>
       </div>
       <BottomNav/>

@@ -3,6 +3,7 @@ import { nanoid } from '@/lib/nanoid';
 import type { Direction, Source, Transaction } from '../schemas';
 import { itemsRepo } from './items';
 import { syncRepo } from './sync';
+import { api } from '../api';
 
 interface NewTx {
   sku: string;
@@ -41,6 +42,17 @@ export const txRepo = {
       await itemsRepo.adjustStock(input.sku, delta);
       await syncRepo.enqueue({ kind: 'tx.upload', payload: tx, attempts: 0, nextTryAt: now });
     });
+
+    // Fire-and-forget API push. SW BackgroundSync retains + retries if offline.
+    void api.tx.create(tx).then(async (saved) => {
+      await db.transactions.update(tx.localId, {
+        txId: saved.txId ?? undefined,
+        syncedAt: saved.syncedAt ?? Date.now(),
+      });
+    }).catch(() => {
+      // Offline / server error — SW queue persists the request for retry.
+    });
+
     return tx;
   },
 };

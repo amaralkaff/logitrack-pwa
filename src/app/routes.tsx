@@ -14,7 +14,7 @@ import SuccessScreen from '@/features/scan/SuccessScreen';
 import ErrorScreen from '@/features/scan/ErrorScreen';
 import ManualScreen from '@/features/scan/ManualScreen';
 import SyncQueueScreen from '@/features/sync/SyncQueueScreen';
-import LabelsScreen from '@/features/dev/LabelsScreen';
+import ItemFormScreen from '@/features/inventory/ItemFormScreen';
 
 export const router = createBrowserRouter([
   {
@@ -24,7 +24,9 @@ export const router = createBrowserRouter([
       { index: true, Component: LoginScreen },
       { path: 'home',        element: <RequireAuth><HomeScreen/></RequireAuth> },
       { path: 'inv',         element: <RequireAuth><InventoryScreen/></RequireAuth> },
+      { path: 'inv/new',     element: <RequireAuth><ItemFormScreen mode="create"/></RequireAuth> },
       { path: 'inv/:sku',    element: <RequireAuth><ItemDetailScreen/></RequireAuth> },
+      { path: 'inv/:sku/edit', element: <RequireAuth><ItemFormScreen mode="edit"/></RequireAuth> },
       { path: 'empty',       element: <RequireAuth><EmptyScreen/></RequireAuth> },
       { path: 'hist',        element: <RequireAuth><HistoryScreen/></RequireAuth> },
       { path: 'me',          element: <RequireAuth><ProfileScreen/></RequireAuth> },
@@ -34,7 +36,6 @@ export const router = createBrowserRouter([
       { path: 'scan/success',element: <RequireAuth><SuccessScreen/></RequireAuth> },
       { path: 'scan/error',  element: <RequireAuth><ErrorScreen/></RequireAuth> },
       { path: 'sync',        element: <RequireAuth><SyncQueueScreen/></RequireAuth> },
-      { path: 'labels',      element: <RequireAuth><LabelsScreen/></RequireAuth> },
     ],
   },
 ]);
