@@ -18,6 +18,31 @@ export async function hydrateFromServer(): Promise<void> {
       }
     }
   } catch {
-    // offline / API down / token expired — Dexie keeps last-seen data
+    // items: offline — Dexie keeps its cache
+  }
+
+  try {
+    const txs = await api.tx.list();
+    if (Array.isArray(txs)) {
+      await db.transactions.clear();
+      if (txs.length) {
+        await db.transactions.bulkPut(txs.map((x) => ({
+          localId: x.localId ?? x.txId ?? `srv-${x.createdAt}`,
+          txId: x.txId,
+          sku: x.sku,
+          qty: x.qty,
+          dir: x.dir,
+          source: x.source,
+          operatorId: x.operatorId,
+          location: x.location,
+          condition: x.condition ?? 'good',
+          batch: x.batch,
+          createdAt: x.createdAt,
+          syncedAt: x.syncedAt ?? Date.now(),
+        })));
+      }
+    }
+  } catch {
+    // tx: offline — keep local queue (may contain unsynced writes)
   }
 }
