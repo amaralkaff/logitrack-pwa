@@ -33,7 +33,7 @@ export default function ChoiceScreen() {
 
   return (
     <Screen>
-      <TopBar title="New entry" subtitle={`${inActive ? 'Incoming' : 'Outgoing'} · Supply Bay 2`}/>
+      <TopBar title="New entry" subtitle={inActive ? 'Incoming' : 'Outgoing'}/>
       <div style={{ padding: '0 20px 16px' }}>
         <div style={{ display: 'flex', gap: 8, padding: 4, background: t.surface2, borderRadius: RADIUS.md }}>
           <div onClick={() => setScanDir('in')} style={inActive ? tabActive : tabIdle}>

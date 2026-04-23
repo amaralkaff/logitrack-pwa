@@ -18,6 +18,22 @@ interface AppState {
   detectedText: string | null;
   detectedSku: string | null;
   setDetected: (text: string | null, sku: string | null) => void;
+
+  /** AI vision extraction result from Gemini. */
+  aiResult: AiScanResult | null;
+  setAiResult: (r: AiScanResult | null) => void;
+}
+
+export interface AiScanResult {
+  sku?: string | null;
+  name?: string | null;
+  qty?: number | null;
+  batch?: string | null;
+  ean?: string | null;
+  unit?: string | null;
+  location?: string | null;
+  confidence: number;
+  raw_text: string;
 }
 
 export const useApp = create<AppState>()(
@@ -36,6 +52,9 @@ export const useApp = create<AppState>()(
       detectedText: null,
       detectedSku: null,
       setDetected: (detectedText, detectedSku) => set({ detectedText, detectedSku }),
+
+      aiResult: null,
+      setAiResult: (aiResult) => set({ aiResult }),
     }),
     { name: 'logitrack-app', partialize: (s) => ({ operatorId: s.operatorId, signedInAt: s.signedInAt }) },
   ),

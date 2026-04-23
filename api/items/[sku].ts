@@ -7,7 +7,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!methodAllowed(req, res, ['GET', 'PATCH', 'PUT', 'DELETE'])) return;
   try {
     await connectMongo();
-    const sku = String(req.query.sku ?? '').trim();
+    // Vercel dynamic routes expose :sku via req.query, Express via req.params.
+    const sku = String(
+      (req as unknown as { params?: { sku?: string } }).params?.sku ?? req.query?.sku ?? '',
+    ).trim();
     if (!sku) return bad(res, 'sku required');
 
     if (req.method === 'GET') {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { Screen } from '@/ui/layout/Screen';
 import { TopBar } from '@/ui/TopBar';
 import { Field } from '@/ui/Field';
@@ -30,7 +30,19 @@ export default function ItemFormScreen({ mode }: Props) {
   const t = useTheme();
   const nav = useNavigate();
   const { sku: routeSku } = useParams();
-  const [form, setForm] = useState<FormState>(EMPTY);
+  const [search] = useSearchParams();
+  const initial = mode === 'create' ? {
+    ...EMPTY,
+    sku: search.get('sku') ?? '',
+    name: search.get('name') ?? '',
+    loc: search.get('loc') ?? '',
+    zone: search.get('zone') ?? '',
+    ean: search.get('ean') ?? '',
+    stock: search.get('stock') ?? '0',
+    reorderAt: search.get('reorderAt') ?? '0',
+    unit: search.get('unit') ?? 'EA',
+  } : EMPTY;
+  const [form, setForm] = useState<FormState>(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isEdit = mode === 'edit';

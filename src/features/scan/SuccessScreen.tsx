@@ -19,13 +19,15 @@ export default function SuccessScreen() {
   const source = useApp((s) => s.scanSource) ?? 'ocr';
   const detectedSku = useApp((s) => s.detectedSku);
   const detectedText = useApp((s) => s.detectedText);
+  const aiResult = useApp((s) => s.aiResult);
   const clearDetected = useApp((s) => s.setDetected);
+  const clearAi = useApp((s) => s.setAiResult);
 
   const item = useLiveQuery(
     async () => (detectedSku ? await db.items.get(detectedSku) : undefined),
     [detectedSku],
   );
-  const [qty, setQty] = useState(1);
+  const [qty, setQty] = useState(() => aiResult?.qty && aiResult.qty > 0 ? aiResult.qty : 1);
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -45,6 +47,7 @@ export default function SuccessScreen() {
       location: item.loc,
     });
     clearDetected(null, null);
+    clearAi(null);
     nav('/home', { replace: true });
   };
 
@@ -115,7 +118,12 @@ export default function SuccessScreen() {
         }}>
           <Icon name="bolt" size={16} color={t.accent[400]}/>
           <div style={{ flex: 1, fontSize: 12, color: t.textDim }}>
-            <b style={{ color: t.text }}>Auto-filled</b> from {source.toUpperCase()}. Tap any field to edit.
+            <b style={{ color: t.text }}>Auto-filled</b> from {source.toUpperCase()}.
+            {aiResult && (
+              <> · AI confidence <b style={{ color: aiResult.confidence >= 0.8 ? t.success : aiResult.confidence >= 0.55 ? t.warning : t.danger }}>
+                {(aiResult.confidence * 100).toFixed(0)}%
+              </b></>
+            )}
           </div>
           <div style={{ fontSize: 11, color: t.textMute, fontVariantNumeric: 'tabular-nums' }}>
             {(elapsed / 1000).toFixed(1)}s

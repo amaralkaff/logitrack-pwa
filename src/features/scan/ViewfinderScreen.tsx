@@ -1,34 +1,58 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Icon } from '@/design/icons/Icon';
 import { useTheme } from '@/design/theme';
 import { RADIUS } from '@/design/tokens';
 import { useApp } from '@/app/store';
-import { useOcr } from './useOcr';
+import { useAiVision, type VisionResult } from './useAiVision';
 import { itemsRepo } from '@/data/repos/items';
 
 export default function ViewfinderScreen() {
   const t = useTheme();
   const nav = useNavigate();
   const setDetected = useApp((s) => s.setDetected);
+  const setAiResult = useApp((s) => s.setAiResult);
   const setScanSource = useApp((s) => s.setScanSource);
+  const [preview, setPreview] = useState<VisionResult | null>(null);
 
-  const onRecognized = useCallback(async (rawText: string, skuGuess: string | null) => {
+  const onResult = useCallback(async (r: VisionResult) => {
     setScanSource('ocr');
-    if (!skuGuess) return; // loop keeps scanning until extractSku hits
-    const bySku = await itemsRepo.get(skuGuess);
-    const all = await itemsRepo.list();
-    const byEan = all.find((i) => i.ean === skuGuess);
-    const hit = bySku ?? byEan;
-    setDetected(rawText, hit?.sku ?? null);
-    if (hit) nav('/scan/success');
-    else nav('/scan/error');
-  }, [nav, setDetected, setScanSource]);
+    setAiResult(r);
+    setDetected(r.raw_text ?? null, r.sku ?? null);
+    setPreview(r);
+  }, [setAiResult, setDetected, setScanSource]);
 
-  const { videoRef, ready, recognizing, error, torchSupported, torchOn, toggleTorch } = useOcr({
+  const { videoRef, ready, recognizing, error, torchSupported, torchOn, toggleTorch, captureNow } = useAiVision({
     enabled: true,
-    onRecognized,
+    onResult,
   });
+
+  const confirm = async () => {
+    if (!preview) return;
+    const sku = preview.sku?.trim();
+    if (sku) {
+      const local = await itemsRepo.get(sku);
+      const all = await itemsRepo.list();
+      const byEan = preview.ean ? all.find((i) => i.ean === preview.ean) : undefined;
+      const hit = local ?? byEan;
+      if (hit) {
+        setDetected(preview.raw_text ?? null, hit.sku);
+        nav('/scan/success');
+        return;
+      }
+    }
+    // Unknown — route to /inv/new pre-filled.
+    const q = new URLSearchParams();
+    if (preview.sku)      q.set('sku', preview.sku);
+    if (preview.name)     q.set('name', preview.name);
+    if (preview.ean)      q.set('ean', preview.ean);
+    if (preview.unit)     q.set('unit', preview.unit);
+    if (preview.location) q.set('loc', preview.location);
+    if (preview.qty)      q.set('stock', String(preview.qty));
+    nav(`/inv/new?${q.toString()}`);
+  };
+
+  const retry = () => setPreview(null);
 
   return (
     <div
@@ -46,10 +70,9 @@ export default function ViewfinderScreen() {
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
       />
 
-      {/* dim vignette with cutout */}
       <div style={{
         position: 'absolute', inset: 0,
-        background: `radial-gradient(260px 170px at 50% 46%, transparent 70%, rgba(0,0,0,0.75) 100%)`,
+        background: `radial-gradient(280px 180px at 50% 46%, transparent 70%, rgba(0,0,0,0.75) 100%)`,
         pointerEvents: 'none',
       }}/>
 
@@ -65,7 +88,7 @@ export default function ViewfinderScreen() {
           <Icon name="x" color="#fff" size={20}/>
         </button>
         <div style={{ flex: 1, textAlign: 'center', fontSize: 13, fontWeight: 700, letterSpacing: 0.3 }}>
-          Auto OCR
+          AI Vision · Gemini 2.0
         </div>
         {torchSupported && (
           <button
@@ -81,9 +104,9 @@ export default function ViewfinderScreen() {
         )}
       </div>
 
-      {/* reticle */}
+      {/* reticle (dim when previewing) */}
       <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-        <div style={{ position: 'relative', width: 280, height: 170, marginTop: -40 }}>
+        <div style={{ position: 'relative', width: 300, height: 180, marginTop: -100, opacity: preview ? 0.3 : 1 }}>
           {(['tl', 'tr', 'bl', 'br'] as const).map((c) => {
             const s: React.CSSProperties = {
               position: 'absolute', width: 28, height: 28,
@@ -97,88 +120,195 @@ export default function ViewfinderScreen() {
             if (c === 'br') Object.assign(s, { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3, borderBottomRightRadius: 4 });
             return <div key={c} style={s}/>;
           })}
-          {/* active scanning sweep */}
-          {ready && (
+          {ready && !preview && (
             <div style={{
               position: 'absolute', left: 0, right: 0, top: '50%', height: 2,
               background: `linear-gradient(90deg, transparent, ${t.accent[400]}, transparent)`,
               boxShadow: `0 0 12px ${t.accent[400]}`,
-              animation: 'lt-scan-sweep 1.6s ease-in-out infinite',
+              animation: 'lt-scan-sweep 1.8s ease-in-out infinite',
             }}/>
           )}
         </div>
       </div>
 
-      {error && (
+      {error && !preview && (
         <div style={{
           position: 'absolute', top: '58%', left: 20, right: 20, textAlign: 'center',
-          color: t.danger, fontSize: 13, zIndex: 2,
+          color: t.danger, fontSize: 12, zIndex: 2, padding: 8, background: 'rgba(0,0,0,0.6)', borderRadius: 8,
         }}>
           {error}
         </div>
       )}
 
-      <div style={{
-        position: 'absolute', top: '62%', left: 0, right: 0, textAlign: 'center', zIndex: 2,
-      }}>
-        <div style={{ fontSize: 15, fontWeight: 700 }}>
-          {!ready ? 'Loading OCR engine…' : recognizing ? 'Reading…' : 'Hold steady'}
-        </div>
-        <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
-          {!ready ? 'One-time download, cached afterwards' : 'Centers on SKU / NSN · auto-captures'}
-        </div>
-      </div>
-
-      {/* bottom controls — mode switch only, no shutter */}
-      <div style={{
-        position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 2,
-        padding: '16px 20px 24px', background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)',
-      }}>
+      {!preview && (
         <div style={{
-          display: 'flex', gap: 8, padding: 4, background: 'rgba(0,0,0,0.5)',
-          borderRadius: RADIUS.pill, marginBottom: 14, backdropFilter: 'blur(10px)',
+          position: 'absolute', top: '62%', left: 0, right: 0, textAlign: 'center', zIndex: 2,
+        }}>
+          <div style={{ fontSize: 15, fontWeight: 700 }}>
+            {!ready ? 'Opening camera…' : recognizing ? 'Analyzing…' : 'Point at label'}
+          </div>
+          <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
+            Auto-capture every 2s · or tap shutter
+          </div>
+        </div>
+      )}
+
+      {/* Preview card — shown once we have a result */}
+      {preview && (
+        <PreviewOverlay preview={preview} onConfirm={confirm} onRetry={retry} accent={t.accent} success={t.success} warning={t.warning} danger={t.danger}/>
+      )}
+
+      {/* bottom controls */}
+      {!preview && (
+        <div style={{
+          position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 2,
+          padding: '16px 20px 24px', background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)',
         }}>
           <div style={{
-            flex: 1, padding: '10px 10px', borderRadius: RADIUS.pill,
-            background: t.accent[500], color: '#fff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            fontSize: 12, fontWeight: 700, letterSpacing: 0.4,
+            display: 'flex', gap: 8, padding: 4, background: 'rgba(0,0,0,0.5)',
+            borderRadius: RADIUS.pill, marginBottom: 14, backdropFilter: 'blur(10px)',
           }}>
-            <Icon name="camera" size={14} color="#fff"/>
-            OCR
-          </div>
-          <div
-            onClick={() => nav('/scan/manual')}
-            style={{
+            <div style={{
               flex: 1, padding: '10px 10px', borderRadius: RADIUS.pill,
-              color: '#fff',
+              background: t.accent[500], color: '#fff',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              fontSize: 12, fontWeight: 700, letterSpacing: 0.4, cursor: 'pointer',
-            }}
-          >
-            <Icon name="keyboard" size={14} color="#fff"/>
-            Manual
+              fontSize: 12, fontWeight: 700, letterSpacing: 0.4,
+            }}>
+              <Icon name="bolt" size={14} color="#fff"/>
+              AI
+            </div>
+            <div
+              onClick={() => nav('/scan/manual')}
+              style={{
+                flex: 1, padding: '10px 10px', borderRadius: RADIUS.pill,
+                color: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                fontSize: 12, fontWeight: 700, letterSpacing: 0.4, cursor: 'pointer',
+              }}
+            >
+              <Icon name="keyboard" size={14} color="#fff"/>
+              Manual
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14 }}>
+            <button
+              onClick={toggleTorch}
+              disabled={!torchSupported}
+              style={{
+                width: 44, height: 44, borderRadius: 22, background: 'rgba(255,255,255,0.12)',
+                border: 'none', opacity: torchSupported ? 1 : 0.3,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+              }}
+            >
+              <Icon name="bolt" color="#fff" size={18}/>
+            </button>
+            <button
+              onClick={captureNow}
+              disabled={!ready || recognizing}
+              style={{
+                width: 72, height: 72, borderRadius: 36, border: `4px solid rgba(255,255,255,0.9)`,
+                background: ready && !recognizing ? '#fff' : 'rgba(255,255,255,0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: ready && !recognizing ? 'pointer' : 'default',
+              }}
+            >
+              {recognizing ? (
+                <div style={{ width: 24, height: 24, borderRadius: 12, border: `3px solid ${t.accent[500]}`, borderTopColor: 'transparent', animation: 'lt-spin 0.8s linear infinite' }}/>
+              ) : (
+                <div style={{ width: 54, height: 54, borderRadius: 27, background: '#fff' }}/>
+              )}
+            </button>
+            <button
+              onClick={() => nav('/scan/manual')}
+              style={{
+                width: 44, height: 44, borderRadius: 22, background: 'rgba(255,255,255,0.12)',
+                border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+              }}
+            >
+              <Icon name="keyboard" color="#fff" size={18}/>
+            </button>
           </div>
         </div>
-
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-          fontSize: 12, color: '#e5e7eb',
-        }}>
-          <div style={{
-            width: 10, height: 10, borderRadius: 5,
-            background: recognizing ? t.success : ready ? t.accent[400] : t.textMute,
-            boxShadow: recognizing ? `0 0 10px ${t.success}` : 'none',
-            animation: ready && !recognizing ? 'lt-pulse 1.6s ease-in-out infinite' : 'none',
-          }}/>
-          {!ready ? 'Warming up' : recognizing ? 'Analyzing frame' : 'Auto-scanning'}
-        </div>
-      </div>
+      )}
 
       <style>{`
-        @keyframes lt-scan-sweep { 0%,100% { transform: translateY(-60px); } 50% { transform: translateY(60px); } }
-        @keyframes lt-pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+        @keyframes lt-scan-sweep { 0%,100% { transform: translateY(-70px); } 50% { transform: translateY(70px); } }
+        @keyframes lt-spin { to { transform: rotate(360deg); } }
       `}</style>
+    </div>
+  );
+}
+
+interface Accent { 500: string; 400: string }
+
+function PreviewOverlay({ preview, onConfirm, onRetry, accent, success, warning, danger }: {
+  preview: VisionResult;
+  onConfirm: () => void;
+  onRetry: () => void;
+  accent: Accent;
+  success: string;
+  warning: string;
+  danger: string;
+}) {
+  const conf = preview.confidence ?? 0;
+  const confColor = conf >= 0.8 ? success : conf >= 0.55 ? warning : danger;
+  const rows: Array<[string, string | number | null | undefined]> = [
+    ['SKU', preview.sku],
+    ['Name', preview.name],
+    ['Quantity', preview.qty],
+    ['Unit', preview.unit],
+    ['Location', preview.location],
+    ['EAN', preview.ean],
+    ['Batch', preview.batch],
+  ];
+  return (
+    <div style={{
+      position: 'absolute', left: 16, right: 16, bottom: 24, zIndex: 3,
+      background: 'rgba(13,18,24,0.96)', borderRadius: RADIUS.lg,
+      border: `1px solid rgba(255,255,255,0.1)`,
+      padding: 18, color: '#fff',
+      boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <div style={{ width: 10, height: 10, borderRadius: 5, background: confColor, boxShadow: `0 0 8px ${confColor}` }}/>
+        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1, color: '#a7b0bd' }}>
+          GEMINI · CONFIDENCE {(conf * 100).toFixed(0)}%
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', rowGap: 6, columnGap: 8, fontSize: 13 }}>
+        {rows.map(([label, val]) => (
+          <>
+            <div key={`${label}-l`} style={{ color: '#a7b0bd', fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase', alignSelf: 'center' }}>
+              {label}
+            </div>
+            <div key={`${label}-v`} style={{ fontWeight: 600, fontFamily: label === 'SKU' || label === 'EAN' ? 'JetBrains Mono, monospace' : undefined }}>
+              {val ?? <span style={{ color: '#6c7685' }}>—</span>}
+            </div>
+          </>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+        <button
+          onClick={onRetry}
+          style={{
+            flex: 1, height: 46, borderRadius: RADIUS.md, border: `1px solid rgba(255,255,255,0.15)`,
+            background: 'transparent', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+          }}
+        >
+          Retry
+        </button>
+        <button
+          onClick={onConfirm}
+          style={{
+            flex: 2, height: 46, borderRadius: RADIUS.md, border: 'none',
+            background: accent[500], color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          }}
+        >
+          <Icon name="check" size={16} color="#fff" stroke={2.4}/>
+          {preview.sku ? 'Use this' : 'Create new'}
+        </button>
+      </div>
     </div>
   );
 }

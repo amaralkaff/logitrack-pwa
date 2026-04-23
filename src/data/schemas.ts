@@ -51,8 +51,9 @@ export type SyncJob = z.infer<typeof SyncJob>;
 export const User = z.object({
   operatorId: z.string(),
   name: z.string(),
-  role: z.string().default('Logistics Officer'),
+  role: z.string().default('Operator'),
   shift: z.string().optional(),
+  location: z.string().optional(),
   pinHash: z.string().optional(),
 });
 export type User = z.infer<typeof User>;

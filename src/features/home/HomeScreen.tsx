@@ -46,7 +46,7 @@ export default function HomeScreen() {
           <Icon name="package" size={18} color="#fff"/>
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 12, color: t.textDim }}>FOB Alpha · Supply Bay 2</div>
+          <div style={{ fontSize: 12, color: t.textDim }}>{user?.location ?? 'No location set'}</div>
           <div style={{ fontSize: 15, fontWeight: 700 }}>Hello, {user?.name?.split(' ')[0] ?? 'there'}</div>
         </div>
         <div

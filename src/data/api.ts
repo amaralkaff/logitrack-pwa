@@ -1,4 +1,4 @@
-import type { Item, Transaction } from './schemas';
+import type { Item, Transaction, User } from './schemas';
 
 const BASE = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
@@ -31,5 +31,11 @@ export const api = {
   tx: {
     list:   () => req<Transaction[]>('/tx'),
     create: (tx: Transaction) => req<Transaction>('/tx', { method: 'POST', body: JSON.stringify(tx) }),
+  },
+  users: {
+    get:    (operatorId: string) =>
+      req<User>(`/users/${encodeURIComponent(operatorId)}`),
+    upsert: (operatorId: string, patch: Partial<User>) =>
+      req<User>(`/users/${encodeURIComponent(operatorId)}`, { method: 'PATCH', body: JSON.stringify(patch) }),
   },
 };

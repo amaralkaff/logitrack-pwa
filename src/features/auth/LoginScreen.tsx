@@ -13,17 +13,21 @@ export default function LoginScreen() {
   const t = useTheme();
   const nav = useNavigate();
   const signIn = useApp((s) => s.signIn);
-  const [operatorId, setOperatorId] = useState('LT-0482');
-  const [pin, setPin] = useState('');
+  const [operatorId, setOperatorId] = useState('');
+  const [name, setName] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
-    if (!operatorId) return;
-    const existing = await usersRepo.get(operatorId);
+    setError(null);
+    const id = operatorId.trim().toUpperCase();
+    if (!id) { setError('Operator ID required'); return; }
+
+    const existing = await usersRepo.get(id);
     if (!existing) {
-      // First-run: register the operator with this ID + name placeholder.
-      await usersRepo.put({ operatorId, name: 'SGT R. Kurniawan', role: 'S-4 Logistics NCO', shift: '06:00 – 14:00' });
+      if (!name.trim()) { setError('Name required for first sign-in'); return; }
+      await usersRepo.put({ operatorId: id, name: name.trim(), role: 'Operator' });
     }
-    signIn(operatorId);
+    signIn(id);
     nav('/home', { replace: true });
   };
 
@@ -46,12 +50,12 @@ export default function LoginScreen() {
             <span style={{ color: t.accent[400] }}>without typing.</span>
           </div>
           <div style={{ fontSize: 15, color: t.textDim, lineHeight: 1.5 }}>
-            Scan, capture, and log inventory in under 5 seconds. Works offline, syncs later.
+            AI vision + offline-first. Capture label → auto-fill → log.
           </div>
 
           <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
             {([
-              { icon: 'camera', label: 'Text OCR' },
+              { icon: 'camera', label: 'AI scan' },
               { icon: 'keyboard', label: 'Manual' },
             ] as const).map((f) => (
               <div key={f.label} style={{
@@ -67,13 +71,13 @@ export default function LoginScreen() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <Field label="Operator ID" value={operatorId} editable onChange={setOperatorId} mono/>
-          <Field label="PIN" value={pin} editable onChange={setPin} mono focused type="password"/>
+          <Field label="Operator ID" value={operatorId} editable onChange={setOperatorId} mono placeholder="e.g. LT-0482" autoFocus/>
+          <Field label="Name (first sign-in)" value={name} editable onChange={setName} placeholder="Your full name"/>
+          {error && (
+            <div style={{ fontSize: 12, color: t.danger, padding: '0 4px' }}>{error}</div>
+          )}
           <div style={{ height: 4 }}/>
           <Btn kind="primary" size="lg" block onClick={submit}>Sign in</Btn>
-          <div style={{ fontSize: 12, color: t.textMute, textAlign: 'center', marginTop: 6 }}>
-            v0.1 · Device: Terminal 07
-          </div>
         </div>
       </div>
     </Screen>
