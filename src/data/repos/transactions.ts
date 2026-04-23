@@ -43,14 +43,22 @@ export const txRepo = {
       await syncRepo.enqueue({ kind: 'tx.upload', payload: tx, attempts: 0, nextTryAt: now });
     });
 
-    // Fire-and-forget API push. SW BackgroundSync retains + retries if offline.
+    // Fire-and-forget API push. SW BackgroundSync retains + retries on transient errors.
     void api.tx.create(tx).then(async (saved) => {
       await db.transactions.update(tx.localId, {
         txId: saved.txId ?? undefined,
         syncedAt: saved.syncedAt ?? Date.now(),
       });
-    }).catch(() => {
-      // Offline / server error — SW queue persists the request for retry.
+    }).catch(async (err) => {
+      // Hard failures (bad SKU / validation) — stop retrying, roll back local state.
+      const status = (err as { status?: number }).status;
+      if (status && status >= 400 && status < 500 && status !== 408 && status !== 429) {
+        await db.transaction('rw', db.items, db.transactions, async () => {
+          await itemsRepo.adjustStock(input.sku, -delta);
+          await db.transactions.delete(tx.localId);
+        });
+      }
+      // 5xx / offline — SW Background Sync keeps the queued POST for retry.
     });
 
     return tx;

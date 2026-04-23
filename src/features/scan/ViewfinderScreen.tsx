@@ -30,26 +30,16 @@ export default function ViewfinderScreen() {
   const confirm = async () => {
     if (!preview) return;
     const sku = preview.sku?.trim();
-    if (sku) {
-      const local = await itemsRepo.get(sku);
-      const all = await itemsRepo.list();
-      const byEan = preview.ean ? all.find((i) => i.ean === preview.ean) : undefined;
-      const hit = local ?? byEan;
-      if (hit) {
-        setDetected(preview.raw_text ?? null, hit.sku);
-        nav('/scan/success');
-        return;
-      }
+    let hit = sku ? await itemsRepo.resolve(sku) : undefined;
+    if (!hit && preview.ean) hit = await itemsRepo.resolveByEan(preview.ean);
+    if (hit) {
+      setDetected(preview.raw_text ?? null, hit.sku);
+      nav('/scan/success');
+      return;
     }
-    // Unknown — route to /inv/new pre-filled.
-    const q = new URLSearchParams();
-    if (preview.sku)      q.set('sku', preview.sku);
-    if (preview.name)     q.set('name', preview.name);
-    if (preview.ean)      q.set('ean', preview.ean);
-    if (preview.unit)     q.set('unit', preview.unit);
-    if (preview.location) q.set('loc', preview.location);
-    if (preview.qty)      q.set('stock', String(preview.qty));
-    nav(`/inv/new?${q.toString()}`);
+    // Not in DB — guard against AI hallucination. No auto-create from tx flow.
+    setDetected(preview.raw_text ?? null, null);
+    nav('/scan/error');
   };
 
   const retry = () => setPreview(null);
