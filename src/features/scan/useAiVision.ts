@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { api } from '@/data/api';
 
 export interface VisionResult {
   sku?: string | null;
@@ -12,19 +13,18 @@ export interface VisionResult {
   raw_text: string;
 }
 
-const BASE = import.meta.env.VITE_API_BASE_URL ?? '/api';
 /** Confidence threshold — below this we force a manual review. */
 const MIN_CONFIDENCE = 0.55;
 
 interface UseAiVisionOpts {
   enabled: boolean;
-  /** Auto-snapshot cadence in ms. Default 2000. Set to 0 to disable. */
+  /** Auto-snapshot cadence in ms. Default 0 (manual only). */
   intervalMs?: number;
   onResult: (r: VisionResult) => void;
   onError?: (err: string) => void;
 }
 
-export function useAiVision({ enabled, intervalMs = 2000, onResult, onError }: UseAiVisionOpts) {
+export function useAiVision({ enabled, intervalMs = 0, onResult, onError }: UseAiVisionOpts) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<number | null>(null);
@@ -115,21 +115,11 @@ export function useAiVision({ enabled, intervalMs = 2000, onResult, onError }: U
     busyRef.current = true;
     setRecognizing(true);
     try {
-      const res = await fetch(`${BASE}/vision`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ image: img }),
-      });
-      if (!res.ok) {
-        const txt = await res.text().catch(() => res.statusText);
-        throw new Error(`${res.status}: ${txt.slice(0, 200)}`);
-      }
-      const parsed = (await res.json()) as VisionResult;
+      const parsed = await api.vision.extract(img) as VisionResult;
       if ((parsed?.confidence ?? 0) >= MIN_CONFIDENCE && (parsed?.sku || parsed?.name)) {
         doneRef.current = true;
         onResult(parsed);
       }
-      // else keep looping
     } catch (e) {
       const msg = (e as Error).message;
       setError(msg);
@@ -140,7 +130,6 @@ export function useAiVision({ enabled, intervalMs = 2000, onResult, onError }: U
     }
   }, [onError, onResult]);
 
-  /** Manual shutter (also used by tap-to-scan). Bypasses confidence gate. */
   const captureNow = useCallback(async () => {
     if (busyRef.current || doneRef.current) return;
     const img = snapshot();
@@ -148,16 +137,7 @@ export function useAiVision({ enabled, intervalMs = 2000, onResult, onError }: U
     busyRef.current = true;
     setRecognizing(true);
     try {
-      const res = await fetch(`${BASE}/vision`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ image: img }),
-      });
-      if (!res.ok) {
-        const txt = await res.text().catch(() => res.statusText);
-        throw new Error(`${res.status}: ${txt.slice(0, 200)}`);
-      }
-      const parsed = (await res.json()) as VisionResult;
+      const parsed = await api.vision.extract(img) as VisionResult;
       doneRef.current = true;
       onResult(parsed);
     } catch (e) {

@@ -57,4 +57,12 @@ export const api = {
     upsert: (operatorId: string, patch: Partial<User>) =>
       req<User>(`/users/${encodeURIComponent(operatorId)}`, { method: 'PATCH', body: JSON.stringify(patch) }),
   },
+  vision: {
+    extract: (imageDataUrl: string) =>
+      req<{
+        sku?: string | null; name?: string | null; qty?: number | null;
+        batch?: string | null; ean?: string | null; unit?: string | null;
+        location?: string | null; confidence: number; raw_text: string;
+      }>('/vision', { method: 'POST', body: JSON.stringify({ image: imageDataUrl }) }),
+  },
 };

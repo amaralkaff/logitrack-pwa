@@ -125,7 +125,7 @@ export default function ViewfinderScreen() {
             {!ready ? 'Opening camera…' : recognizing ? 'Analyzing…' : 'Point at label'}
           </div>
           <div style={{ fontSize: 12, opacity: 0.7, marginTop: 4 }}>
-            Auto-capture every 2s · or tap shutter
+            Tap shutter to scan
           </div>
         </div>
       )}
