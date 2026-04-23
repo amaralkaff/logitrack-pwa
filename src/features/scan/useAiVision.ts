@@ -141,9 +141,12 @@ export function useAiVision({ enabled, intervalMs = 0, onResult, onError }: UseA
       doneRef.current = true;
       onResult(parsed);
     } catch (e) {
-      const msg = (e as Error).message;
-      setError(msg);
-      onError?.(msg);
+      const raw = (e as Error).message ?? String(e);
+      const friendly = /503|overload|unavailable|spike|resource_exhausted|429/i.test(raw)
+        ? 'AI is temporarily overloaded. Wait a moment and try again.'
+        : raw.slice(0, 160);
+      setError(friendly);
+      onError?.(friendly);
     } finally {
       busyRef.current = false;
       setRecognizing(false);
