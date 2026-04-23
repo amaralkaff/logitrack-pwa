@@ -28,7 +28,12 @@ export default function SuccessScreen() {
     async () => (detectedSku ? await db.items.get(detectedSku) : undefined),
     [detectedSku],
   );
-  const [qty, setQty] = useState(() => aiResult?.qty && aiResult.qty > 0 ? aiResult.qty : 1);
+  const cleanQty = (v: unknown): number => {
+    const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : NaN;
+    if (!Number.isFinite(n) || n <= 0) return 1;
+    return Math.min(999, Math.max(1, Math.round(n)));
+  };
+  const [qty, setQty] = useState(() => cleanQty(aiResult?.qty));
   const [elapsed, setElapsed] = useState(0);
   const [gpsLoc, setGpsLoc] = useState<string>('');
   const gps = useGpsLocation();
@@ -49,13 +54,20 @@ export default function SuccessScreen() {
 
   const confirm = async () => {
     if (!operatorId || !item) return;
+    const clean = (v: unknown): string | undefined => {
+      if (typeof v !== 'string') return undefined;
+      const s = v.trim();
+      if (!s || /^(null|undefined|none|n\/a|-)$/i.test(s)) return undefined;
+      return s;
+    };
     await txRepo.create({
       sku: item.sku,
-      qty,
+      qty: cleanQty(qty),
       dir,
       source,
       operatorId,
-      location: gpsLoc || item.loc,
+      location: clean(gpsLoc) ?? clean(item.loc) ?? 'UNASSIGNED',
+      batch: clean(aiResult?.batch),
     });
     clearDetected(null, null);
     clearAi(null);
