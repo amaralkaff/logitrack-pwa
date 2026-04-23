@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Screen } from '@/ui/layout/Screen';
+import { TopBar } from '@/ui/TopBar';
 import { Btn } from '@/ui/Btn';
 import { Field } from '@/ui/Field';
 import { Icon } from '@/design/icons/Icon';
@@ -28,21 +29,24 @@ export default function SuccessScreen() {
     async () => (detectedSku ? await db.items.get(detectedSku) : undefined),
     [detectedSku],
   );
+
+  const cleanStr = (v: unknown): string => {
+    if (typeof v !== 'string') return '';
+    const s = v.trim();
+    if (!s || /^(null|undefined|none|n\/a|-)$/i.test(s)) return '';
+    return s;
+  };
   const cleanQty = (v: unknown): number => {
     const n = typeof v === 'number' ? v : typeof v === 'string' ? Number(v) : NaN;
     if (!Number.isFinite(n) || n <= 0) return 1;
     return Math.min(999, Math.max(1, Math.round(n)));
   };
-  const [qty, setQty] = useState(() => cleanQty(aiResult?.qty));
-  const [elapsed, setElapsed] = useState(0);
-  const [gpsLoc, setGpsLoc] = useState<string>('');
-  const gps = useGpsLocation();
 
-  useEffect(() => {
-    const start = Date.now();
-    const id = setInterval(() => setElapsed(Date.now() - start), 100);
-    return () => clearInterval(id);
-  }, []);
+  const [qty, setQty] = useState(() => cleanQty(aiResult?.qty));
+  const [batch, setBatch] = useState(() => cleanStr(aiResult?.batch));
+  const [gpsLoc, setGpsLoc] = useState<string>('');
+  const [busy, setBusy] = useState(false);
+  const gps = useGpsLocation();
 
   useEffect(() => {
     (async () => {
@@ -53,33 +57,37 @@ export default function SuccessScreen() {
   }, []);
 
   const confirm = async () => {
-    if (!operatorId || !item) return;
-    const clean = (v: unknown): string | undefined => {
-      if (typeof v !== 'string') return undefined;
-      const s = v.trim();
-      if (!s || /^(null|undefined|none|n\/a|-)$/i.test(s)) return undefined;
-      return s;
-    };
-    await txRepo.create({
-      sku: item.sku,
-      qty: cleanQty(qty),
-      dir,
-      source,
-      operatorId,
-      location: clean(gpsLoc) ?? clean(item.loc) ?? 'UNASSIGNED',
-      batch: clean(aiResult?.batch),
-    });
-    clearDetected(null, null);
-    clearAi(null);
-    nav('/home', { replace: true });
+    if (!operatorId || !item || busy) return;
+    setBusy(true);
+    try {
+      await txRepo.create({
+        sku: item.sku,
+        qty: cleanQty(qty),
+        dir,
+        source,
+        operatorId,
+        location: cleanStr(gpsLoc) || cleanStr(item.loc) || 'UNASSIGNED',
+        batch: cleanStr(batch) || undefined,
+      });
+      clearDetected(null, null);
+      clearAi(null);
+      nav('/home', { replace: true });
+    } finally {
+      setBusy(false);
+    }
   };
+
+  const dirColor = dir === 'in' ? t.incoming : t.outgoing;
+  const dirLabel = dir === 'in' ? 'Incoming' : 'Outgoing';
+  const dirIcon = dir === 'in' ? 'arrowDown' : 'arrowUp';
 
   if (!item) return (
     <Screen>
+      <TopBar title="Resolving…"/>
       <div style={{ padding: 24 }}>
-        <div style={{ fontSize: 18, fontWeight: 700 }}>Resolving…</div>
+        <div style={{ fontSize: 14, fontWeight: 700 }}>Looking up item…</div>
         <div style={{ fontSize: 12, color: t.textDim, marginTop: 8, fontFamily: TYPE.mono }}>
-          {detectedText}
+          {detectedText ?? '—'}
         </div>
       </div>
     </Screen>
@@ -87,84 +95,123 @@ export default function SuccessScreen() {
 
   return (
     <Screen>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '8px 20px 0' }}>
-        <div style={{ padding: '28px 0 18px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+      <TopBar title={`${dirLabel} · Confirm`}/>
+
+      <div style={{
+        flex: 1, minHeight: 0, overflow: 'auto',
+        padding: '4px 16px 12px',
+        display: 'flex', flexDirection: 'column', gap: 12,
+      }}>
+        {/* Detection hero */}
+        <div style={{
+          padding: 14, borderRadius: RADIUS.lg,
+          background: t.surface, border: `1px solid ${t.divider}`,
+          display: 'flex', alignItems: 'center', gap: 12,
+        }}>
           <div style={{
-            width: 84, height: 84, borderRadius: 42,
+            width: 44, height: 44, borderRadius: 22,
             background: t.success + '22', border: `2px solid ${t.success}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
-            <Icon name="check" size={40} color={t.success} stroke={3}/>
+            <Icon name="check" size={20} color={t.success} stroke={3}/>
           </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: t.success, letterSpacing: 1 }}>DETECTED</div>
-            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.4, marginTop: 4 }}>{item.name}</div>
-            <div style={{ fontSize: 12, color: t.textDim, marginTop: 4, fontFamily: TYPE.mono }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: -0.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {item.name}
+            </div>
+            <div style={{ fontSize: 11, color: t.textMute, fontFamily: TYPE.mono, marginTop: 2 }}>
               {item.sku}
             </div>
           </div>
+          <div style={{
+            padding: '4px 8px', borderRadius: 6, background: dirColor + '22', color: dirColor,
+            fontSize: 10, fontWeight: 800, letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 4,
+          }}>
+            <Icon name={dirIcon} size={12} color={dirColor}/>
+            {dir === 'in' ? 'IN' : 'OUT'}
+          </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <Field
-              label="Quantity"
-              value={String(qty)}
-              mono
-              suffix={
-                <div style={{ display: 'flex', gap: 4 }}>
-                  <div
-                    onClick={() => setQty((n) => Math.max(1, n - 1))}
-                    style={{ width: 28, height: 28, borderRadius: 6, background: t.surface3, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                  >
-                    <Icon name="minus" size={14} color={t.text}/>
-                  </div>
-                  <div
-                    onClick={() => setQty((n) => n + 1)}
-                    style={{ width: 28, height: 28, borderRadius: 6, background: t.surface3, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                  >
-                    <Icon name="plus" size={14} color={t.text}/>
-                  </div>
-                </div>
-              }
-            />
-            <Field label="Unit" value={item.unit}/>
-          </div>
-          <Field
-            label="Location (GPS)"
-            value={gps.loading ? 'Getting GPS…' : (gpsLoc || `${item.loc}${item.zone ? ` · Zone ${item.zone}` : ''}`)}
-            suffix={<Icon name="mapPin" size={16} color={gpsLoc ? t.accent[400] : t.textDim}/>}
+        {aiResult?.imageDataUrl && (
+          <img
+            src={aiResult.imageDataUrl}
+            alt="Captured"
+            style={{
+              width: '100%', maxHeight: 180, objectFit: 'cover',
+              borderRadius: RADIUS.md, border: `1px solid ${t.divider}`,
+              display: 'block',
+            }}
           />
-          <Field label="Condition" value="Good" suffix={<Icon name="chevron" size={16} color={t.textDim}/>}/>
-        </div>
+        )}
 
-        <div style={{
-          marginTop: 14, padding: 10, borderRadius: RADIUS.md,
-          background: t.accent[500] + '14', border: `1px solid ${t.accent[500]}44`,
-          display: 'flex', alignItems: 'center', gap: 10,
-        }}>
-          <Icon name="bolt" size={16} color={t.accent[400]}/>
-          <div style={{ flex: 1, fontSize: 12, color: t.textDim }}>
-            <b style={{ color: t.text }}>Auto-filled</b> from {source.toUpperCase()}.
-            {aiResult && (
-              <> · AI confidence <b style={{ color: aiResult.confidence >= 0.8 ? t.success : aiResult.confidence >= 0.55 ? t.warning : t.danger }}>
-                {(aiResult.confidence * 100).toFixed(0)}%
-              </b></>
-            )}
+        <Field
+          label="Quantity"
+          value={String(qty)}
+          editable
+          onChange={(v) => setQty(cleanQty(v))}
+          type="number"
+          mono
+          suffix={
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button
+                type="button"
+                onClick={() => setQty((n) => Math.max(1, n - 1))}
+                style={{ width: 28, height: 28, borderRadius: 6, background: t.surface3, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              ><Icon name="minus" size={14} color={t.text}/></button>
+              <button
+                type="button"
+                onClick={() => setQty((n) => Math.min(999, n + 1))}
+                style={{ width: 28, height: 28, borderRadius: 6, background: t.surface3, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              ><Icon name="plus" size={14} color={t.text}/></button>
+            </div>
+          }
+        />
+        <Field label="Unit" value={item.unit} />
+        <Field
+          label="Location (GPS)"
+          value={gps.loading ? 'Getting GPS…' : (gpsLoc || item.loc)}
+          suffix={<Icon name="mapPin" size={16} color={gpsLoc ? t.accent[400] : t.textDim}/>}
+        />
+        <Field
+          label="Batch / Lot"
+          value={batch}
+          editable
+          onChange={(v) => setBatch(cleanStr(v))}
+          placeholder="Optional"
+        />
+        <Field label="Source" value={source.toUpperCase()}/>
+        <Field label="Operator" value={operatorId ?? ''} mono/>
+
+        {aiResult && (
+          <div style={{
+            padding: '10px 12px', borderRadius: RADIUS.md,
+            background: t.accent[500] + '14', border: `1px solid ${t.accent[500]}44`,
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            <Icon name="bolt" size={14} color={t.accent[400]}/>
+            <div style={{ flex: 1, fontSize: 12, color: t.textDim }}>
+              Gemini ·{' '}
+              <b style={{
+                color: aiResult.confidence >= 0.8 ? t.success
+                  : aiResult.confidence >= 0.55 ? t.warning : t.danger,
+              }}>
+                {(aiResult.confidence * 100).toFixed(0)}% confidence
+              </b>
+            </div>
           </div>
-          <div style={{ fontSize: 11, color: t.textMute, fontVariantNumeric: 'tabular-nums' }}>
-            {(elapsed / 1000).toFixed(1)}s
-          </div>
-        </div>
+        )}
+      </div>
 
-        <div style={{ flex: 1 }}/>
-
-        <div style={{ display: 'flex', gap: 10, padding: '12px 0' }}>
-          <Btn kind="ghost" size="lg" style={{ flex: 1 }} onClick={() => nav('/scan/manual')}>Edit</Btn>
-          <Btn kind="primary" size="lg" icon="check" style={{ flex: 2 }} onClick={confirm}>
-            Confirm · Log {dir}
-          </Btn>
-        </div>
+      {/* Sticky bottom action bar */}
+      <div style={{
+        flexShrink: 0, padding: '10px 16px calc(12px + env(safe-area-inset-bottom))',
+        background: t.bg, borderTop: `1px solid ${t.divider}`,
+        display: 'flex', gap: 10,
+      }}>
+        <Btn kind="ghost" size="lg" onClick={() => nav(-1)} style={{ flex: 1 }}>Cancel</Btn>
+        <Btn kind="primary" size="lg" icon="check" onClick={confirm} style={{ flex: 2 }}>
+          {busy ? 'Logging…' : `Log ${dirLabel}`}
+        </Btn>
       </div>
     </Screen>
   );

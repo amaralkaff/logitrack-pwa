@@ -36,6 +36,7 @@ export interface AiScanResult {
   location?: string | null;
   confidence: number;
   raw_text: string;
+  imageDataUrl?: string;
 }
 
 export const useApp = create<AppState>()(
