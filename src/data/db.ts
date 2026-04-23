@@ -24,19 +24,20 @@ export const db = new LogiTrackDB();
 /** Seed dev data. Idempotent: inserts any missing SKU without touching existing rows. */
 export async function seedIfEmpty() {
   const now = Date.now();
+  // Military logistics dummy set. NSN = NATO Stock Number (13 digits, no dashes in OCR).
   const seed = [
-    { sku: 'SKU-77421', name: 'Diesel Filter Canister',       loc: 'A-12-03', zone: 'A', stock: 248, reorderAt: 40, unit: 'EA',  ean: '4901234567890', updatedAt: now },
-    { sku: 'SKU-30195', name: 'Cable Harness 3M Reinforced',  loc: 'B-04-11', zone: 'B', stock: 12,  reorderAt: 20, unit: 'EA',  ean: '4012345678905', updatedAt: now },
-    { sku: 'SKU-11842', name: 'Hydraulic Seal Kit Mk.II',     loc: 'A-07-02', zone: 'A', stock: 96,  reorderAt: 30, unit: 'EA',  ean: '5901234123457', updatedAt: now },
-    { sku: 'SKU-55010', name: 'Safety Helmet · Class E',      loc: 'C-01-08', zone: 'C', stock: 4,   reorderAt: 15, unit: 'EA',  ean: '8711234567895', updatedAt: now },
-    { sku: 'SKU-20088', name: 'Thermal Blanket Roll',         loc: 'A-11-01', zone: 'A', stock: 33,  reorderAt: 10, unit: 'EA',  ean: '7612345098765', updatedAt: now },
-    { sku: 'SKU-66711', name: 'Brake Pad Set · HD',           loc: 'B-02-04', zone: 'B', stock: 180, reorderAt: 40, unit: 'SET', ean: '4006381333931', updatedAt: now },
-    { sku: 'SKU-84330', name: 'LED Beacon Amber',             loc: 'C-03-02', zone: 'C', stock: 22,  reorderAt: 10, unit: 'EA',  ean: '0049022615328', updatedAt: now },
-    { sku: 'SKU-50921', name: 'Nitrile Glove Box 100ct',      loc: 'D-01-05', zone: 'D', stock: 70,  reorderAt: 25, unit: 'BOX', ean: '3600540120588', updatedAt: now },
-    { sku: 'SKU-41277', name: 'Conveyor Belt V-38',           loc: 'A-05-09', zone: 'A', stock: 9,   reorderAt: 6,  unit: 'M',   updatedAt: now },
-    { sku: 'SKU-92310', name: 'Load Strap 4T Ratchet',        loc: 'B-06-03', zone: 'B', stock: 54,  reorderAt: 20, unit: 'EA',  ean: '5055119512313', updatedAt: now },
-    { sku: 'SKU-10455', name: 'Industrial Adhesive 500ml',    loc: 'D-02-11', zone: 'D', stock: 15,  reorderAt: 8,  unit: 'BTL', ean: '4026755145113', updatedAt: now },
-    { sku: 'SKU-63480', name: 'Pallet Label Spool 1000ct',    loc: 'D-03-01', zone: 'D', stock: 31,  reorderAt: 12, unit: 'ROLL',ean: '0885609040127', updatedAt: now },
+    { sku: 'MIL-11001', name: 'Rifle 5.56mm M4 Carbine',         loc: 'ARM-A-01-03', zone: 'A', stock: 48,  reorderAt: 10, unit: 'EA',  ean: '1005013740045', updatedAt: now },
+    { sku: 'MIL-11002', name: 'Magazine STANAG 30rd',            loc: 'ARM-A-01-04', zone: 'A', stock: 620, reorderAt: 200,unit: 'EA',  ean: '1005014765001', updatedAt: now },
+    { sku: 'MIL-12043', name: 'Ammunition 5.56x45mm M855 Linked',loc: 'AMM-B-03-02', zone: 'B', stock: 18,  reorderAt: 20, unit: 'CAN', ean: '1305013510116', updatedAt: now },
+    { sku: 'MIL-12044', name: 'Ammunition 9x19mm Ball M882',     loc: 'AMM-B-03-05', zone: 'B', stock: 42,  reorderAt: 15, unit: 'CAN', ean: '1305012551437', updatedAt: now },
+    { sku: 'MIL-13018', name: 'Grenade Smoke M18 Violet',        loc: 'AMM-B-04-01', zone: 'B', stock: 24,  reorderAt: 12, unit: 'EA',  ean: '1330011041720', updatedAt: now },
+    { sku: 'MIL-20115', name: 'Helmet ACH Size M',               loc: 'GEA-C-02-07', zone: 'C', stock: 72,  reorderAt: 20, unit: 'EA',  ean: '8470015207350', updatedAt: now },
+    { sku: 'MIL-20211', name: 'Body Armor IOTV Size L',          loc: 'GEA-C-02-09', zone: 'C', stock: 9,   reorderAt: 10, unit: 'EA',  ean: '8470015522040', updatedAt: now },
+    { sku: 'MIL-20350', name: 'Night Vision PVS-14 Monocular',   loc: 'OPT-C-05-02', zone: 'C', stock: 14,  reorderAt: 6,  unit: 'EA',  ean: '5855014322137', updatedAt: now },
+    { sku: 'MIL-30022', name: 'Radio Handheld AN/PRC-152',       loc: 'COM-D-01-01', zone: 'D', stock: 18,  reorderAt: 8,  unit: 'EA',  ean: '5820015525005', updatedAt: now },
+    { sku: 'MIL-30100', name: 'Battery BA-5590 Lithium',         loc: 'COM-D-01-12', zone: 'D', stock: 130, reorderAt: 40, unit: 'EA',  ean: '6135011764177', updatedAt: now },
+    { sku: 'MIL-40005', name: 'MRE Case Menu Assorted 12ct',     loc: 'SUP-E-02-04', zone: 'E', stock: 88,  reorderAt: 30, unit: 'BOX', ean: '8970012985005', updatedAt: now },
+    { sku: 'MIL-40102', name: 'IFAK Individual First Aid Kit',   loc: 'MED-E-03-07', zone: 'E', stock: 35,  reorderAt: 20, unit: 'EA',  ean: '6545015392465', updatedAt: now },
   ];
   const existing = new Set((await db.items.toArray()).map((i) => i.sku));
   const missing = seed.filter((r) => !existing.has(r.sku));
@@ -45,7 +46,7 @@ export async function seedIfEmpty() {
   const user = await db.users.get('LT-0482');
   if (!user) {
     await db.users.put({
-      operatorId: 'LT-0482', name: 'Rian Kurniawan', role: 'Logistics Officer', shift: '06:00 – 14:00',
+      operatorId: 'LT-0482', name: 'SGT R. Kurniawan', role: 'S-4 Logistics NCO', shift: '06:00 – 14:00',
     });
   }
 }

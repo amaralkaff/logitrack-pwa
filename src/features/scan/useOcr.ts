@@ -12,10 +12,14 @@ interface UseOcrOpts {
   onRecognized: (text: string, sku: string | null) => void;
 }
 
-/** Match patterns like "SKU-77421" or "SKU 77421" or bare EAN (8/12/13 digits). */
+/** Match SKU/NSN-style tokens:
+ *  - prefix-digits:  "MIL-11001", "SKU-77421" (configurable prefix 2–5 letters)
+ *  - bare EAN/UPC:   8, 12, or 13 contiguous digits
+ *  - NATO NSN:       13 digits (covered by EAN branch)
+ */
 function extractSku(text: string): string | null {
-  const skuMatch = text.match(/SKU[-\s]?(\d{3,6})/i);
-  if (skuMatch) return `SKU-${skuMatch[1]}`;
+  const prefixed = text.match(/\b([A-Z]{2,5})[-\s]?(\d{3,6})\b/);
+  if (prefixed) return `${prefixed[1]}-${prefixed[2]}`;
   const ean = text.match(/\b(\d{13}|\d{12}|\d{8})\b/);
   if (ean) return ean[1]!;
   return null;

@@ -66,7 +66,7 @@ export default function ProfileScreen() {
         </div>
 
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: t.textMute, padding: '4px 0 8px' }}>SHIFT</div>
-        <Row icon="mapPin" label="Location" value="Warehouse 03 · Dock B"/>
+        <Row icon="mapPin" label="Location" value="FOB Alpha · Supply Bay 2"/>
         <Row icon="clock" label="Shift" value={user?.shift ?? '—'}/>
 
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: t.textMute, padding: '12px 0 8px' }}>APP</div>

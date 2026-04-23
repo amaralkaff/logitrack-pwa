@@ -21,7 +21,7 @@ export default function LoginScreen() {
     const existing = await usersRepo.get(operatorId);
     if (!existing) {
       // First-run: register the operator with this ID + name placeholder.
-      await usersRepo.put({ operatorId, name: 'Rian Kurniawan', role: 'Logistics Officer', shift: '06:00 – 14:00' });
+      await usersRepo.put({ operatorId, name: 'SGT R. Kurniawan', role: 'S-4 Logistics NCO', shift: '06:00 – 14:00' });
     }
     signIn(operatorId);
     nav('/home', { replace: true });
